@@ -69,6 +69,9 @@ import { GamificationProfile } from './components/GamificationProfile'
 import { DealFlowVisualization } from './components/DealFlowVisualization'
 import { QuickActionsFab } from './components/QuickActions'
 import { BulkActions } from './components/BulkActions'
+import { NotificationCenter } from './components/NotificationCenter'
+import { CoverageBookExport } from './components/CoverageBookExport'
+import { SmartInsightsEngine } from './components/SmartInsightsEngine'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -119,7 +122,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -129,6 +132,7 @@ export default function RecruitTracker() {
   const [user, setUser] = useState<any>(null)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   // Modal states
@@ -381,6 +385,13 @@ export default function RecruitTracker() {
               <Keyboard className="w-5 h-5" />
             </button>
 
+            <NotificationCenter
+              applications={applications}
+              events={events}
+              contacts={contacts}
+              onNavigate={setActiveTab}
+            />
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
@@ -495,6 +506,12 @@ export default function RecruitTracker() {
             <div className="pt-4 mt-4 border-t border-slate-800">
               <p className="px-3 text-xs font-medium text-slate-600 uppercase tracking-wider mb-2">Advanced</p>
               <NavButton 
+                active={activeTab === 'insights'} 
+                onClick={() => setActiveTab('insights')}
+                icon={Lightbulb}
+                label="AI Insights"
+              />
+              <NavButton 
                 active={activeTab === 'timeline'} 
                 onClick={() => setActiveTab('timeline')}
                 icon={GitCommit}
@@ -553,6 +570,17 @@ export default function RecruitTracker() {
               </p>
             </div>
           )}
+
+          {/* Export Button */}
+          <div className="mt-6 px-4">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-sm font-medium transition-colors border border-slate-700/50"
+            >
+              <Download className="w-4 h-4" />
+              Export Coverage Book
+            </button>
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -715,11 +743,28 @@ export default function RecruitTracker() {
                     notes={notes}
                   />
                 )}
+                {activeTab === 'insights' && (
+                  <SmartInsightsEngine
+                    contacts={contacts}
+                    applications={applications}
+                    events={events}
+                    notes={notes}
+                    onNavigate={setActiveTab}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           )}
         </main>
       </div>
+
+      {/* Coverage Book Export Modal */}
+      <CoverageBookExport
+        contacts={contacts}
+        applications={applications}
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+      />
 
       {/* Command Palette */}
       {showCommandPalette && (

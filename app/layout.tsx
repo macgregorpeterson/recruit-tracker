@@ -18,6 +18,13 @@ export const metadata: Metadata = {
     description: 'Your complete banking recruiting command center',
     type: 'website',
   },
+  manifest: '/manifest.json',
+  themeColor: '#1e293b',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'RecruitTracker',
+  },
 }
 
 export default function RootLayout({

@@ -53,7 +53,7 @@ import {
   Newspaper,
   Activity
 } from 'lucide-react'
-import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
+import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity, EVENT_TYPE_COLORS, STATUS_COLORS, STATUS_LABELS, EVENT_TYPE_LABELS } from './types'
 
 // Import tab components
 import { DashboardTab } from './components/DashboardTab'
@@ -101,47 +101,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const STATUS_COLORS: Record<ApplicationStatus, { bg: string; text: string; border: string }> = {
-  applied: { bg: 'bg-slate-500/20', text: 'text-slate-300', border: 'border-slate-500/30' },
-  'phone-screen': { bg: 'bg-blue-500/20', text: 'text-blue-300', border: 'border-blue-500/30' },
-  'first-round': { bg: 'bg-yellow-500/20', text: 'text-yellow-300', border: 'border-yellow-500/30' },
-  'second-round': { bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/30' },
-  superday: { bg: 'bg-purple-500/20', text: 'text-purple-300', border: 'border-purple-500/30' },
-  offer: { bg: 'bg-emerald-500/20', text: 'text-emerald-300', border: 'border-emerald-500/30' },
-  rejected: { bg: 'bg-red-500/20', text: 'text-red-300', border: 'border-red-500/30' },
-  withdrawn: { bg: 'bg-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/30' },
-  accepted: { bg: 'bg-green-500/20', text: 'text-green-300', border: 'border-green-500/30' },
-}
-
-const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  applied: 'Applied',
-  'phone-screen': 'Phone Screen',
-  'first-round': 'First Round',
-  'second-round': 'Second Round',
-  superday: 'Superday',
-  offer: 'Offer',
-  rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
-  accepted: 'Accepted',
-}
-
-const EVENT_TYPE_COLORS: Record<EventType, { bg: string; text: string }> = {
-  coffee: { bg: 'bg-amber-500/20', text: 'text-amber-300' },
-  'info-session': { bg: 'bg-cyan-500/20', text: 'text-cyan-300' },
-  'phone-screen': { bg: 'bg-blue-500/20', text: 'text-blue-300' },
-  'first-round': { bg: 'bg-yellow-500/20', text: 'text-yellow-300' },
-  superday: { bg: 'bg-purple-500/20', text: 'text-purple-300' },
-  'follow-up': { bg: 'bg-pink-500/20', text: 'text-pink-300' },
-}
-
-const EVENT_TYPE_LABELS: Record<EventType, string> = {
-  coffee: 'Coffee Chat',
-  'info-session': 'Info Session',
-  'phone-screen': 'Phone Screen',
-  'first-round': 'First Round',
-  superday: 'Superday',
-  'follow-up': 'Follow-up',
-}
+// Constants imported from ./types
 
 export default function RecruitTracker() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights' | 'coverletter' | 'scheduler' | 'mobile' | 'referrals' | 'email' | 'calendarsync' | 'performance' | 'deals' | 'apptemplates' | 'velocity' | 'networkgraph' | 'salary' | 'voicenotes' | 'marketintel'>('dashboard')

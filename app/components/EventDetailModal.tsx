@@ -61,12 +61,12 @@ export function EventDetailModal({
         <div className={`px-6 pt-6 pb-4 border-b border-slate-700/50 ${isPast ? 'opacity-60' : ''}`}>
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${EVENT_TYPE_COLORS[event.event_type]}`}>
+              <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${EVENT_TYPE_COLORS[event.event_type].bg} ${EVENT_TYPE_COLORS[event.event_type].text} ${EVENT_TYPE_COLORS[event.event_type].border}`}>
                 <Calendar className="w-7 h-7" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-white">{event.title}</h2>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border mt-2 ${EVENT_TYPE_COLORS[event.event_type]}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border mt-2 ${EVENT_TYPE_COLORS[event.event_type].bg} ${EVENT_TYPE_COLORS[event.event_type].text} ${EVENT_TYPE_COLORS[event.event_type].border}`}>
                   {EVENT_TYPE_LABELS[event.event_type]}
                 </span>
                 {isPast && (

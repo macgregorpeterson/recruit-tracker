@@ -246,7 +246,7 @@ export function SmartEventModal({ isOpen, onClose, onSave, event, contacts, appl
                   onClick={() => setFormData({ ...formData, event_type: type })}
                   className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
                     formData.event_type === type
-                      ? EVENT_TYPE_COLORS[type]
+                      ? `${EVENT_TYPE_COLORS[type].bg} ${EVENT_TYPE_COLORS[type].text} ${EVENT_TYPE_COLORS[type].border}`
                       : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800'
                   }`}
                 >

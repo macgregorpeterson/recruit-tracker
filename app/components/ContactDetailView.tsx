@@ -367,7 +367,7 @@ function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => v
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
           <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 ${
-            EVENT_TYPE_COLORS[event.event_type]?.split(' ')[0] || 'bg-slate-700'
+            EVENT_TYPE_COLORS[event.event_type]?.bg ?? 'bg-slate-700'
           }`}>
             <span className="text-xs font-bold text-slate-400">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
             <span className="text-sm font-bold text-white">{eventDate.getDate()}</span>

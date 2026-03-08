@@ -43,7 +43,11 @@ import {
   FolderOpen,
   Trophy,
   Zap,
-  Flame
+  Flame,
+  FileEdit,
+  Link2,
+  Smartphone,
+  CalendarClock
 } from 'lucide-react'
 import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
 

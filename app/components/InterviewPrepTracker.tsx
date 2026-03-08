@@ -21,14 +21,62 @@ interface InterviewPrepTrackerProps {
 }
 
 const QUESTION_BANK = [
+  // Technical - Accounting
   { id: '1', question: 'Walk me through a DCF analysis', category: 'technical', difficulty: 'medium' },
   { id: '2', question: 'How does depreciation affect the three financial statements?', category: 'technical', difficulty: 'medium' },
-  { id: '3', question: 'Tell me about a time you demonstrated leadership', category: 'behavioral', difficulty: 'easy' },
-  { id: '4', question: 'Why investment banking?', category: 'fit', difficulty: 'easy' },
-  { id: '5', question: 'What\'s your view on the current market?', category: 'market', difficulty: 'hard' },
+  { id: '3', question: 'What is the difference between EBITDA and net income?', category: 'technical', difficulty: 'easy' },
+  { id: '4', question: 'How does $10 of depreciation affect the three statements?', category: 'technical', difficulty: 'medium' },
+  { id: '5', question: 'What is working capital and why does it matter?', category: 'technical', difficulty: 'easy' },
   { id: '6', question: 'Walk me through an LBO model', category: 'technical', difficulty: 'hard' },
-  { id: '7', question: 'Tell me about a deal you followed', category: 'deal', difficulty: 'medium' },
-  { id: '8', question: 'How do you value a company with negative cash flows?', category: 'technical', difficulty: 'hard' },
+  { id: '7', question: 'How do you value a company with negative cash flows?', category: 'technical', difficulty: 'hard' },
+  { id: '8', question: 'What are the three main valuation methodologies?', category: 'technical', difficulty: 'easy' },
+  { id: '9', question: 'What is the difference between enterprise value and equity value?', category: 'technical', difficulty: 'medium' },
+  { id: '10', question: 'How do you calculate WACC?', category: 'technical', difficulty: 'medium' },
+  
+  // Technical - Advanced
+  { id: '11', question: 'What is a PIK toggle and how does it work?', category: 'technical', difficulty: 'hard' },
+  { id: '12', question: 'Explain the difference between yield and YTM', category: 'technical', difficulty: 'medium' },
+  { id: '13', question: 'What happens to EPS in an all-stock vs all-cash deal?', category: 'technical', difficulty: 'hard' },
+  { id: '14', question: 'Walk me through a merger model', category: 'technical', difficulty: 'hard' },
+  { id: '15', question: 'How do you calculate returns in an LBO?', category: 'technical', difficulty: 'medium' },
+  
+  // Behavioral
+  { id: '16', question: 'Tell me about a time you demonstrated leadership', category: 'behavioral', difficulty: 'easy' },
+  { id: '17', question: 'Tell me about a time you failed and what you learned', category: 'behavioral', difficulty: 'medium' },
+  { id: '18', question: 'Describe a time you worked with a difficult teammate', category: 'behavioral', difficulty: 'medium' },
+  { id: '19', question: 'Tell me about a time you had to meet a tight deadline', category: 'behavioral', difficulty: 'medium' },
+  { id: '20', question: 'Give an example of when you went above and beyond', category: 'behavioral', difficulty: 'medium' },
+  { id: '21', question: 'Tell me about a time you had to persuade someone', category: 'behavioral', difficulty: 'medium' },
+  { id: '22', question: 'Describe a time you received critical feedback', category: 'behavioral', difficulty: 'medium' },
+  { id: '23', question: 'Tell me about a time you had to prioritize multiple tasks', category: 'behavioral', difficulty: 'easy' },
+  
+  // Fit/Culture
+  { id: '24', question: 'Why investment banking?', category: 'fit', difficulty: 'easy' },
+  { id: '25', question: 'Why our firm specifically?', category: 'fit', difficulty: 'medium' },
+  { id: '26', question: 'Where do you see yourself in 5 years?', category: 'fit', difficulty: 'easy' },
+  { id: '27', question: 'What other firms are you interviewing with?', category: 'fit', difficulty: 'medium' },
+  { id: '28', question: 'What is your greatest strength?', category: 'fit', difficulty: 'easy' },
+  { id: '29', question: 'What is your greatest weakness?', category: 'fit', difficulty: 'medium' },
+  { id: '30', question: 'Why should we hire you over other candidates?', category: 'fit', difficulty: 'medium' },
+  { id: '31', question: 'What do you do for fun outside of work?', category: 'fit', difficulty: 'easy' },
+  { id: '32', question: 'Tell me about yourself / walk me through your resume', category: 'fit', difficulty: 'easy' },
+  
+  // Market/Current Events
+  { id: '33', question: 'What\'s your view on the current market?', category: 'market', difficulty: 'hard' },
+  { id: '34', question: 'Tell me about a recent deal that interests you', category: 'market', difficulty: 'medium' },
+  { id: '35', question: 'Where do you think interest rates are headed?', category: 'market', difficulty: 'medium' },
+  { id: '36', question: 'What sector would you invest in right now?', category: 'market', difficulty: 'medium' },
+  { id: '37', question: 'How do you stay informed about markets?', category: 'market', difficulty: 'easy' },
+  { id: '38', question: 'What is your view on inflation?', category: 'market', difficulty: 'medium' },
+  { id: '39', question: 'Tell me about a company you think is undervalued', category: 'market', difficulty: 'hard' },
+  { id: '40', question: 'What are the key drivers of M&A activity?', category: 'market', difficulty: 'medium' },
+  
+  // Deal Discussion
+  { id: '41', question: 'Tell me about a deal you followed', category: 'deal', difficulty: 'medium' },
+  { id: '42', question: 'Walk me through a recent M&A transaction', category: 'deal', difficulty: 'hard' },
+  { id: '43', question: 'What makes an acquisition accretive vs dilutive?', category: 'deal', difficulty: 'medium' },
+  { id: '44', question: 'What are the key sources of synergies in M&A?', category: 'deal', difficulty: 'medium' },
+  { id: '45', question: 'Why do companies pay a control premium?', category: 'deal', difficulty: 'medium' },
 ]
 
 export function InterviewPrepTracker({ applications }: InterviewPrepTrackerProps) {

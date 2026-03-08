@@ -76,6 +76,12 @@ import { BulkActions } from './components/BulkActions'
 import { NotificationCenter } from './components/NotificationCenter'
 import { CoverageBookExport } from './components/CoverageBookExport'
 import { SmartInsightsEngine } from './components/SmartInsightsEngine'
+import { AICoverLetterGenerator } from './components/AICoverLetterGenerator'
+import { InterviewScheduler } from './components/InterviewScheduler'
+import { PWAManager } from './components/PWAManager'
+import { ReferralTracker } from './components/ReferralTracker'
+import { EmailIntegrationHub } from './components/EmailIntegrationHub'
+import { CalendarSyncManager } from './components/CalendarSyncManager'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -126,7 +132,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights' | 'coverletter' | 'scheduler' | 'mobile' | 'referrals' | 'email' | 'calendarsync'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -292,6 +298,32 @@ export default function RecruitTracker() {
             break
           case '0':
             setActiveTab('gamification')
+            break
+          case 'e':
+          case 'E':
+            setActiveTab('email')
+            break
+          case 's':
+          case 'S':
+            setActiveTab('scheduler')
+            break
+          case 'r':
+          case 'R':
+            setActiveTab('referrals')
+            break
+          case 'l':
+          case 'L':
+            setActiveTab('coverletter')
+            break
+          case 'm':
+          case 'M':
+            setActiveTab('mobile')
+            break
+          case 'c':
+          case 'C':
+            if (e.shiftKey) {
+              setActiveTab('calendarsync')
+            }
             break
           case '?':
             setShowKeyboardShortcuts(true)
@@ -548,6 +580,46 @@ export default function RecruitTracker() {
                 label="Progress"
               />
             </div>
+            
+            <div className="pt-4 mt-4 border-t border-slate-800">
+              <p className="px-3 text-xs font-medium text-slate-600 uppercase tracking-wider mb-2">Power Tools</p>
+              <NavButton 
+                active={activeTab === 'email'} 
+                onClick={() => setActiveTab('email')}
+                icon={Mail}
+                label="Email Hub"
+              />
+              <NavButton 
+                active={activeTab === 'scheduler'} 
+                onClick={() => setActiveTab('scheduler')}
+                icon={CalendarClock}
+                label="Interview Scheduler"
+              />
+              <NavButton 
+                active={activeTab === 'referrals'} 
+                onClick={() => setActiveTab('referrals')}
+                icon={Link2}
+                label="Referral Tracker"
+              />
+              <NavButton 
+                active={activeTab === 'coverletter'} 
+                onClick={() => setActiveTab('coverletter')}
+                icon={FileEdit}
+                label="AI Cover Letter"
+              />
+              <NavButton 
+                active={activeTab === 'mobile'} 
+                onClick={() => setActiveTab('mobile')}
+                icon={Smartphone}
+                label="Mobile & PWA"
+              />
+              <NavButton 
+                active={activeTab === 'calendarsync'} 
+                onClick={() => setActiveTab('calendarsync')}
+                icon={RefreshCw}
+                label="Calendar Sync"
+              />
+            </div>
           </nav>
 
           <div className="mt-8 px-4">
@@ -756,6 +828,46 @@ export default function RecruitTracker() {
                     onNavigate={setActiveTab}
                   />
                 )}
+                {activeTab === 'email' && (
+                  <EmailIntegrationHub 
+                    contacts={contacts}
+                    applications={applications}
+                  />
+                )}
+                {activeTab === 'scheduler' && (
+                  <InterviewScheduler
+                    applications={applications}
+                    contacts={contacts}
+                    existingEvents={events}
+                    onScheduleEvent={(event) => {
+                      console.log('Event scheduled:', event)
+                    }}
+                  />
+                )}
+                {activeTab === 'referrals' && (
+                  <ReferralTracker
+                    contacts={contacts}
+                    applications={applications}
+                  />
+                )}
+                {activeTab === 'coverletter' && (
+                  <AICoverLetterGenerator
+                    applications={applications}
+                    contacts={contacts}
+                    onSaveLetter={(letter) => {
+                      console.log('Letter saved:', letter)
+                    }}
+                  />
+                )}
+                {activeTab === 'mobile' && (
+                  <PWAManager />
+                )}
+                {activeTab === 'calendarsync' && (
+                  <CalendarSyncManager
+                    events={events}
+                    onSync={() => console.log('Calendar synced')}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           )}
@@ -859,6 +971,12 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
     { key: '8', action: 'Go to Reminders', category: 'Navigation' },
     { key: '9', action: 'Go to Interview Prep', category: 'Navigation' },
     { key: '0', action: 'Go to Progress', category: 'Navigation' },
+    { key: 'E', action: 'Go to Email Hub', category: 'Power Tools' },
+    { key: 'S', action: 'Go to Interview Scheduler', category: 'Power Tools' },
+    { key: 'R', action: 'Go to Referral Tracker', category: 'Power Tools' },
+    { key: 'L', action: 'Go to AI Cover Letter', category: 'Power Tools' },
+    { key: 'M', action: 'Go to Mobile & PWA', category: 'Power Tools' },
+    { key: 'C', action: 'Go to Calendar Sync', category: 'Power Tools' },
     { key: '?', action: 'Show this help', category: 'Navigation' },
     { key: 'Esc', action: 'Close modals', category: 'Navigation' },
   ]

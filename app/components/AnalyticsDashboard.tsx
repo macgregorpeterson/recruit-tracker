@@ -1,223 +1,276 @@
 'use client'
 
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { DashboardStats, ApplicationStatus, STATUS_ORDER, STATUS_LABELS } from '../types'
+import { Application, Contact, CalendarEvent, ApplicationStatus, STATUS_ORDER, STATUS_COLORS, STATUS_LABELS } from '../types'
 import { 
   TrendingUp, 
   Target, 
-  Clock, 
+  Users, 
+  Briefcase, 
+  Calendar, 
   Award,
   ArrowUpRight,
-  BarChart3,
-  PieChart,
-  Zap
+  ArrowDownRight,
+  Minus
 } from 'lucide-react'
 
 interface AnalyticsDashboardProps {
-  stats: DashboardStats
-  applications: any[]
+  applications: Application[]
+  contacts: Contact[]
+  events: CalendarEvent[]
 }
 
-export function AnalyticsDashboard({ stats, applications }: AnalyticsDashboardProps) {
-  // Calculate stage conversion rates
-  const getStageCount = (status: ApplicationStatus) => 
-    applications.filter(a => a.status === status).length
+export function AnalyticsDashboard({ applications, contacts, events }: AnalyticsDashboardProps) {
+  // Calculate metrics
+  const metrics = useMemo(() => {
+    const now = new Date()
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  const appliedCount = getStageCount('applied')
-  const phoneCount = getStageCount('phone-screen')
-  const firstRoundCount = getStageCount('first-round')
-  const secondRoundCount = getStageCount('second-round')
-  const superdayCount = getStageCount('superday')
-  const offerCount = getStageCount('offer')
+    // Status distribution
+    const statusCounts = STATUS_ORDER.reduce((acc, status) => {
+      acc[status] = applications.filter(a => a.status === status).length
+      return acc
+    }, {} as Record<ApplicationStatus, number>)
 
-  const conversionRate = appliedCount > 0 ? Math.round((offerCount / appliedCount) * 100) : 0
-  const interviewRate = appliedCount > 0 ? Math.round(((phoneCount + firstRoundCount + secondRoundCount + superdayCount) / appliedCount) * 100) : 0
+    // Conversion rates
+    const totalApplied = applications.length
+    const phoneScreens = statusCounts['phone-screen'] + statusCounts['first-round'] + statusCounts['second-round'] + statusCounts['superday'] + statusCounts['offer']
+    const interviews = statusCounts['first-round'] + statusCounts['second-round'] + statusCounts['superday'] + statusCounts['offer']
+    const offers = statusCounts['offer']
 
-  // Get top targeted firms
-  const firmCounts = applications.reduce((acc, app) => {
-    acc[app.firm] = (acc[app.firm] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+    const phoneScreenRate = totalApplied > 0 ? Math.round((phoneScreens / totalApplied) * 100) : 0
+    const interviewRate = phoneScreens > 0 ? Math.round((interviews / phoneScreens) * 100) : 0
+    const offerRate = interviews > 0 ? Math.round((offers / interviews) * 100) : 0
 
-  const topFirms = Object.entries(firmCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
+    // Funnel data
+    const funnelData = [
+      { stage: 'Applied', count: totalApplied, color: 'bg-slate-500' },
+      { stage: 'Phone Screen', count: phoneScreens, color: 'bg-blue-500' },
+      { stage: 'Interviews', count: interviews, color: 'bg-amber-500' },
+      { stage: 'Offers', count: offers, color: 'bg-emerald-500' },
+    ]
 
-  // Calculate pipeline health score
-  const activeApps = applications.filter(a => 
-    !['rejected', 'withdrawn', 'accepted'].includes(a.status)
-  ).length
-  const pipelineHealth = Math.min(100, (activeApps / 15) * 100) // Target 15 active apps for 100%
+    // Top firms
+    const firmCounts = applications.reduce((acc, app) => {
+      acc[app.firm] = (acc[app.firm] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    const topFirms = Object.entries(firmCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+
+    // Activity over time (last 30 days)
+    const recentApps = applications.filter(a => 
+      a.created_at && new Date(a.created_at) > thirtyDaysAgo
+    ).length
+
+    const recentEvents = events.filter(e => 
+      new Date(e.start_time) > thirtyDaysAgo && new Date(e.start_time) <= now
+    ).length
+
+    const upcomingEvents = events.filter(e => 
+      new Date(e.start_time) > now
+    ).length
+
+    // Network stats
+    const contactsWithEvents = contacts.filter(c => 
+      events.some(e => e.contact_ids?.includes(c.id))
+    ).length
+
+    const networkingRate = contacts.length > 0 
+      ? Math.round((contactsWithEvents / contacts.length) * 100) 
+      : 0
+
+    return {
+      statusCounts,
+      phoneScreenRate,
+      interviewRate,
+      offerRate,
+      funnelData,
+      topFirms,
+      recentApps,
+      recentEvents,
+      upcomingEvents,
+      contactsWithEvents,
+      networkingRate,
+      totalApplied,
+      offers,
+    }
+  }, [applications, contacts, events])
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-400" />
-            Analytics & Insights
+            <Target className="w-6 h-6 text-pink-400" />
+            Analytics
           </h2>
-          <p className="text-slate-400 mt-1">Data-driven insights for your recruiting journey</p>
+          <p className="text-slate-400 mt-1">Insights into your recruiting performance</p>
         </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          icon={Target}
-          label="Offer Conversion"
-          value={`${conversionRate}%`}
-          subValue={offerCount > 0 ? `${offerCount} offers from ${appliedCount} apps` : 'Apply to see rate'}
-          trend={conversionRate > 10 ? '+Strong' : undefined}
-          color="emerald"
-        />
-        <MetricCard
-          icon={Zap}
-          label="Interview Rate"
-          value={`${interviewRate}%`}
-          subValue="Getting first conversations"
+          label="Application → Screen"
+          value={`${metrics.phoneScreenRate}%`}
+          icon={ArrowUpRight}
+          trend={metrics.phoneScreenRate > 30 ? 'good' : metrics.phoneScreenRate > 15 ? 'average' : 'low'}
           color="blue"
         />
         <MetricCard
-          icon={PieChart}
-          label="Pipeline Health"
-          value={`${Math.round(pipelineHealth)}%`}
-          subValue={`${activeApps} active applications`}
-          color={pipelineHealth > 60 ? 'purple' : 'orange'}
+          label="Screen → Interview"
+          value={`${metrics.interviewRate}%`}
+          icon={ArrowUpRight}
+          trend={metrics.interviewRate > 50 ? 'good' : metrics.interviewRate > 30 ? 'average' : 'low'}
+          color="amber"
         />
         <MetricCard
-          icon={Clock}
-          label="Avg. Time to Offer"
-          value="--"
-          subValue="Need completed offers"
-          color="amber"
+          label="Interview → Offer"
+          value={`${metrics.offerRate}%`}
+          icon={Award}
+          trend={metrics.offerRate > 20 ? 'good' : metrics.offerRate > 10 ? 'average' : 'low'}
+          color="emerald"
+        />
+        <MetricCard
+          label="Network Utilization"
+          value={`${metrics.networkingRate}%`}
+          icon={Users}
+          trend={metrics.networkingRate > 40 ? 'good' : metrics.networkingRate > 20 ? 'average' : 'low'}
+          color="purple"
         />
       </div>
 
-      {/* Pipeline Funnel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-6">
-          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-indigo-400" />
-            Pipeline Funnel
-          </h3>
-          <div className="space-y-3">
-            <FunnelBar 
-              label="Applied" 
-              count={appliedCount} 
-              total={Math.max(appliedCount, 1)} 
-              color="bg-slate-500" 
-            />
-            <FunnelBar 
-              label="Phone Screen" 
-              count={phoneCount} 
-              total={Math.max(appliedCount, 1)} 
-              color="bg-blue-500" 
-            />
-            <FunnelBar 
-              label="First Round" 
-              count={firstRoundCount} 
-              total={Math.max(appliedCount, 1)} 
-              color="bg-yellow-500" 
-            />
-            <FunnelBar 
-              label="Second Round" 
-              count={secondRoundCount} 
-              total={Math.max(appliedCount, 1)} 
-              color="bg-orange-500" 
-            />
-            <FunnelBar 
-              label="Superday" 
-              count={superdayCount} 
-              total={Math.max(appliedCount, 1)} 
-              color="bg-purple-500" 
-            />
-            <FunnelBar 
-              label="Offers" 
-              count={offerCount} 
-              total={Math.max(appliedCount, 1)} 
-              color="bg-emerald-500" 
-            />
+      <div className="grid grid-cols-12 gap-6">
+        {/* Funnel Visualization */}
+        <div className="col-span-12 lg:col-span-7">
+          <div className="glass-card p-6">
+            <h3 className="font-semibold text-white mb-6 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-400" />
+              Application Funnel
+            </h3>
+            
+            <div className="space-y-4">
+              {metrics.funnelData.map((stage, index) => {
+                const maxCount = metrics.funnelData[0].count || 1
+                const percentage = Math.round((stage.count / maxCount) * 100)
+                
+                return (
+                  <div key={stage.stage} className="relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-300">{stage.stage}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-white">{stage.count}</span>
+                        {index > 0 && (
+                          <span className="text-xs text-slate-500">
+                            {percentage}% of applied
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${percentage}%` }}
+                        transition={{ delay: index * 0.1, duration: 0.5 }}
+                        className={`h-full rounded-full ${stage.color}`}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Summary */}
+            <div className="mt-6 p-4 bg-slate-800/30 rounded-xl border border-slate-700/30">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Overall conversion</span>
+                <span className="text-2xl font-bold text-white">
+                  {metrics.totalApplied > 0 ? ((metrics.offers / metrics.totalApplied) * 100).toFixed(1) : 0}%
+                </span>
+              </div>
+              <p className="text-sm text-slate-500 mt-1">
+                {metrics.offers} offers from {metrics.totalApplied} applications
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Top Targeted Firms */}
-        <div className="glass-card p-6">
-          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5 text-amber-400" />
-            Most Targeted Firms
-          </h3>
-          {topFirms.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              <p>No applications yet</p>
-              <p className="text-sm mt-1">Add applications to see your top targets</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {topFirms.map(([firm, count], index) => (
-                <motion.div
-                  key={firm}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-medium text-slate-400">
+        {/* Side Stats */}
+        <div className="col-span-12 lg:col-span-5 space-y-6">
+          {/* Top Firms */}
+          <div className="glass-card p-6">
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-indigo-400" />
+              Most Applied Firms
+            </h3>
+            {metrics.topFirms.length === 0 ? (
+              <p className="text-slate-500 text-sm">No applications yet</p>
+            ) : (
+              <div className="space-y-3">
+                {metrics.topFirms.map(([firm, count], index) => (
+                  <div key={firm} className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-medium text-slate-400">
                       {index + 1}
                     </span>
-                    <span className="text-slate-200">{firm}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(count / (topFirms[0][1] || 1)) * 100}%` }}
-                        transition={{ delay: index * 0.1, duration: 0.5 }}
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
-                      />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">{firm}</span>
+                        <span className="text-sm text-slate-400">{count}</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-800 rounded-full mt-1.5 overflow-hidden">
+                        <div 
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${(count / metrics.topFirms[0][1]) * 100}%` }}
+                        />
+                      </div>
                     </div>
-                    <span className="text-sm text-slate-400 w-6 text-right">{count}</span>
                   </div>
-                </motion.div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Activity Stats */}
+          <div className="glass-card p-6">
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-purple-400" />
+              Last 30 Days
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <StatBox label="Applied" value={metrics.recentApps} />
+              <StatBox label="Events" value={metrics.recentEvents} />
+              <StatBox label="Upcoming" value={metrics.upcomingEvents} />
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Recommendations */}
+      {/* Status Distribution */}
       <div className="glass-card p-6">
-        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-yellow-400" />
-          Smart Recommendations
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <RecommendationCard
-            type="info"
-            title="Diversify Your Pipeline"
-            description="You're heavily concentrated in 2 firms. Consider adding 5-7 more targets to improve your odds."
-            show={topFirms.length > 0 && topFirms[0][1] >= 3}
-          />
-          <RecommendationCard
-            type="action"
-            title="Follow Up on Applications"
-            description={`You have ${appliedCount} applications in 'Applied' stage. Consider reaching out to recruiters.`}
-            show={appliedCount >= 3}
-          />
-          <RecommendationCard
-            type="success"
-            title="Strong Interview Rate!"
-            description="You're converting applications to interviews well. Keep up the networking!"
-            show={interviewRate > 30}
-          />
-          <RecommendationCard
-            type="warning"
-            title="Build Your Coverage Book"
-            description="More contacts = better referrals. Aim for 3-5 contacts per target firm."
-            show={stats.totalContacts < 10}
-          />
+        <h3 className="font-semibold text-white mb-4">Pipeline Distribution</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
+          {STATUS_ORDER.map((status) => {
+            const count = metrics.statusCounts[status]
+            const percentage = metrics.totalApplied > 0 ? Math.round((count / metrics.totalApplied) * 100) : 0
+            
+            return (
+              <div 
+                key={status}
+                className="p-3 bg-slate-800/30 rounded-xl border border-slate-700/30 text-center"
+              >
+                <div className={`text-2xl font-bold mb-1 ${STATUS_COLORS[status].split(' ')[1]}`}>
+                  {count}
+                </div>
+                <div className="text-xs text-slate-400 mb-1">{STATUS_LABELS[status]}</div>
+                <div className="text-xs text-slate-600">{percentage}%</div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -225,100 +278,61 @@ export function AnalyticsDashboard({ stats, applications }: AnalyticsDashboardPr
 }
 
 function MetricCard({ 
-  icon: Icon, 
   label, 
   value, 
-  subValue, 
+  icon: Icon, 
   trend,
   color 
 }: { 
-  icon: React.ElementType
   label: string
   value: string
-  subValue: string
-  trend?: string
+  icon: React.ElementType
+  trend: 'good' | 'average' | 'low'
   color: string
 }) {
-  const colorClasses: Record<string, { bg: string; icon: string; border: string }> = {
-    blue: { bg: 'bg-blue-500/10', icon: 'text-blue-400', border: 'border-blue-500/20' },
-    emerald: { bg: 'bg-emerald-500/10', icon: 'text-emerald-400', border: 'border-emerald-500/20' },
-    purple: { bg: 'bg-purple-500/10', icon: 'text-purple-400', border: 'border-purple-500/20' },
-    amber: { bg: 'bg-amber-500/10', icon: 'text-amber-400', border: 'border-amber-500/20' },
-    orange: { bg: 'bg-orange-500/10', icon: 'text-orange-400', border: 'border-orange-500/20' },
+  const trendColors = {
+    good: 'text-emerald-400',
+    average: 'text-amber-400',
+    low: 'text-red-400',
+  }
+
+  const trendIcons = {
+    good: ArrowUpRight,
+    average: Minus,
+    low: ArrowDownRight,
+  }
+
+  const TrendIcon = trendIcons[trend]
+  const colorClasses: Record<string, { bg: string; icon: string }> = {
+    blue: { bg: 'bg-blue-500/10', icon: 'text-blue-400' },
+    amber: { bg: 'bg-amber-500/10', icon: 'text-amber-400' },
+    emerald: { bg: 'bg-emerald-500/10', icon: 'text-emerald-400' },
+    purple: { bg: 'bg-purple-500/10', icon: 'text-purple-400' },
   }
 
   const colors = colorClasses[color]
 
   return (
-    <div className={`glass-card p-4 ${colors.border}`}>
-      <div className="flex items-start justify-between">
+    <div className="glass-card p-4">
+      <div className="flex items-center justify-between mb-2">
         <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center`}>
           <Icon className={`w-5 h-5 ${colors.icon}`} />
         </div>
-        {trend && (
-          <span className="text-xs font-medium text-emerald-400 flex items-center">
-            {trend}
-          </span>
-        )}
+        <div className={`flex items-center gap-1 ${trendColors[trend]}`}>
+          <TrendIcon className="w-4 h-4" />
+        </div>
       </div>
-      <div className="mt-3">
-        <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="text-sm text-slate-400">{label}</div>
-        <div className="text-xs text-slate-500 mt-1">{subValue}</div>
-      </div>
+      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-sm text-slate-400">{label}</div>
     </div>
   )
 }
 
-function FunnelBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  const percentage = total > 0 ? (count / total) * 100 : 0
-  
+function StatBox({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center gap-4">
-      <span className="text-sm text-slate-400 w-28">{label}</span>
-      <div className="flex-1 h-8 bg-slate-800/50 rounded-lg overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className={`h-full ${color} rounded-lg flex items-center justify-end px-3`}
-        >
-          {count > 0 && <span className="text-sm font-medium text-white">{count}</span>}
-        </motion.div>
-      </div>
-      <span className="text-sm text-slate-500 w-12 text-right">{percentage.toFixed(0)}%</span>
+    <div className="text-center p-3 bg-slate-800/30 rounded-lg">
+      <div className="text-xl font-bold text-white">{value}</div>
+      <div className="text-xs text-slate-400">{label}</div>
     </div>
-  )
-}
-
-function RecommendationCard({ 
-  type, 
-  title, 
-  description, 
-  show 
-}: { 
-  type: 'info' | 'action' | 'success' | 'warning'
-  title: string
-  description: string
-  show: boolean
-}) {
-  if (!show) return null
-
-  const colors = {
-    info: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
-    action: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
-    success: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-    warning: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`p-4 rounded-xl border ${colors[type]}`}
-    >
-      <h4 className="font-medium text-white mb-1">{title}</h4>
-      <p className="text-sm text-slate-300">{description}</p>
-    </motion.div>
   )
 }

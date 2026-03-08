@@ -35,7 +35,9 @@ import {
   RefreshCw,
   Bell,
   BookOpen,
-  Lightbulb
+  Lightbulb,
+  Database,
+  Keyboard
 } from 'lucide-react'
 import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
 
@@ -49,6 +51,10 @@ import { AnalyticsTab } from './components/AnalyticsTab'
 import { SmartTodayWidget } from './components/SmartTodayWidget'
 import { FirmResearchHub } from './components/FirmResearchHub'
 import { DeadlineReminders } from './components/DeadlineReminders'
+import { InterviewPrepTracker } from './components/InterviewPrepTracker'
+import { EmailTemplateManager } from './components/EmailTemplateManager'
+import { DataImportExport } from './components/DataImportExport'
+import { KeyboardShortcutsProvider } from './components/KeyboardShortcuts'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -99,7 +105,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -108,6 +114,7 @@ export default function RecruitTracker() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   // Modal states
@@ -215,12 +222,61 @@ export default function RecruitTracker() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === 'k') {
+      // Cmd/Ctrl + K for search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setShowCommandPalette(prev => !prev)
       }
+      // Cmd/Ctrl + / for keyboard shortcuts help
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault()
+        setShowKeyboardShortcuts(true)
+      }
+      // Cmd/Ctrl + N for new items
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        // Quick add - opens contact modal by default
+        setShowContactModal(true)
+      }
+      // Number keys for navigation (when not in input)
+      if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        switch (e.key) {
+          case '1':
+            setActiveTab('dashboard')
+            break
+          case '2':
+            setActiveTab('coverage')
+            break
+          case '3':
+            setActiveTab('pipeline')
+            break
+          case '4':
+            setActiveTab('calendar')
+            break
+          case '5':
+            setActiveTab('notes')
+            break
+          case '6':
+            setActiveTab('analytics')
+            break
+          case '7':
+            setActiveTab('research')
+            break
+          case '8':
+            setActiveTab('reminders')
+            break
+          case '9':
+            setActiveTab('prep')
+            break
+          case '?':
+            setShowKeyboardShortcuts(true)
+            break
+        }
+      }
+      // Escape to close modals
       if (e.key === 'Escape') {
         setShowCommandPalette(false)
+        setShowKeyboardShortcuts(false)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -299,7 +355,15 @@ export default function RecruitTracker() {
             >
               <RefreshCw className="w-5 h-5" />
             </button>
-            
+
+            <button
+              onClick={() => setShowKeyboardShortcuts(true)}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              title="Keyboard shortcuts (⌘/)"
+            >
+              <Keyboard className="w-5 h-5" />
+            </button>
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
@@ -311,7 +375,7 @@ export default function RecruitTracker() {
                 className="pl-9 pr-4 py-2 w-64 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>
-            
+
             <button
               onClick={handleSignOut}
               className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -397,6 +461,18 @@ export default function RecruitTracker() {
               onClick={() => setActiveTab('prep')}
               icon={Brain}
               label="Interview Prep"
+            />
+            <NavButton 
+              active={activeTab === 'templates'} 
+              onClick={() => setActiveTab('templates')}
+              icon={Mail}
+              label="Email Templates"
+            />
+            <NavButton 
+              active={activeTab === 'data'} 
+              onClick={() => setActiveTab('data')}
+              icon={Database}
+              label="Data & Backup"
             />
           </nav>
 
@@ -522,11 +598,28 @@ export default function RecruitTracker() {
                   />
                 )}
                 {activeTab === 'prep' && (
-                  <div className="glass-card p-8 text-center">
-                    <Brain className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-white mb-2">Interview Prep</h3>
-                    <p className="text-slate-400">Coming soon - Track your interview preparation progress</p>
-                  </div>
+                  <InterviewPrepTracker applications={applications} />
+                )}
+                {activeTab === 'templates' && (
+                  <EmailTemplateManager 
+                    contacts={contacts} 
+                    applications={applications}
+                    onSendEmail={(template, variables) => {
+                      console.log('Email sent:', template, variables)
+                    }}
+                  />
+                )}
+                {activeTab === 'data' && (
+                  <DataImportExport 
+                    contacts={contacts}
+                    applications={applications}
+                    events={events}
+                    notes={notes}
+                    onImport={(data) => {
+                      console.log('Data imported:', data)
+                      fetchData()
+                    }}
+                  />
                 )}
               </motion.div>
             </AnimatePresence>
@@ -549,6 +642,11 @@ export default function RecruitTracker() {
           onAddEvent={() => { setShowEventModal(true); setShowCommandPalette(false) }}
           onAddNote={() => { setShowNoteModal(true); setShowCommandPalette(false) }}
         />
+      )}
+
+      {/* Keyboard Shortcuts Modal */}
+      {showKeyboardShortcuts && (
+        <KeyboardShortcutsModal onClose={() => setShowKeyboardShortcuts(false)} />
       )}
     </div>
   )
@@ -590,6 +688,82 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between text-sm">
       <span className="text-slate-500">{label}</span>
       <span className="font-medium text-slate-200">{value}</span>
+    </div>
+  )
+}
+
+// Keyboard Shortcuts Modal
+function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
+  const shortcuts = [
+    { key: '⌘K', action: 'Open search/command palette', category: 'Navigation' },
+    { key: '⌘/', action: 'Show keyboard shortcuts', category: 'Navigation' },
+    { key: '⌘N', action: 'Quick add (contact)', category: 'Actions' },
+    { key: '1', action: 'Go to Dashboard', category: 'Navigation' },
+    { key: '2', action: 'Go to Coverage Book', category: 'Navigation' },
+    { key: '3', action: 'Go to Pipeline', category: 'Navigation' },
+    { key: '4', action: 'Go to Calendar', category: 'Navigation' },
+    { key: '5', action: 'Go to Notes', category: 'Navigation' },
+    { key: '6', action: 'Go to Analytics', category: 'Navigation' },
+    { key: '7', action: 'Go to Firm Research', category: 'Navigation' },
+    { key: '8', action: 'Go to Reminders', category: 'Navigation' },
+    { key: '9', action: 'Go to Interview Prep', category: 'Navigation' },
+    { key: '?', action: 'Show this help', category: 'Navigation' },
+    { key: 'Esc', action: 'Close modals', category: 'Navigation' },
+  ]
+
+  const categories = [...new Set(shortcuts.map(s => s.category))]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <Keyboard className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white">Keyboard Shortcuts</h3>
+              <p className="text-sm text-slate-400">Speed up your workflow</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-500 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Shortcuts List */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          {categories.map(category => (
+            <div key={category} className="mb-6">
+              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{category}</h4>
+              <div className="space-y-2">
+                {shortcuts.filter(s => s.category === category).map((shortcut, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    <span className="text-slate-300">{shortcut.action}</span>
+                    <kbd className="px-3 py-1 bg-slate-700 rounded-lg text-sm font-mono text-slate-300">
+                      {shortcut.key}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 bg-slate-800/30 border-t border-slate-800 text-center">
+          <p className="text-sm text-slate-500">
+            Press <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-slate-400">?</kbd> anywhere to show this help
+          </p>
+        </div>
+      </motion.div>
     </div>
   )
 }

@@ -146,8 +146,8 @@ export function CalendarTab({ events, onAdd, onSelect, contacts, applications }:
                           key={event.id}
                           onClick={(e) => { e.stopPropagation(); onSelect(event) }}
                           className={`text-[10px] px-1.5 py-0.5 rounded truncate cursor-pointer ${
-                            EVENT_TYPE_COLORS[event.event_type]?.bg || 'bg-slate-700'
-                          } ${EVENT_TYPE_COLORS[event.event_type]?.text || 'text-slate-300'}`}
+                            EVENT_TYPE_COLORS[event.event_type]?.bg ?? 'bg-slate-700'
+                          } ${EVENT_TYPE_COLORS[event.event_type]?.text ?? 'text-slate-300'}`}
                         >
                           {event.title}
                         </div>
@@ -194,7 +194,7 @@ export function CalendarTab({ events, onAdd, onSelect, contacts, applications }:
                       className="flex items-start gap-3 p-3 bg-slate-800/30 rounded-xl hover:bg-slate-800/50 cursor-pointer transition-colors group"
                     >
                       <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 ${
-                        EVENT_TYPE_COLORS[event.event_type]?.bg || 'bg-slate-700'
+                        EVENT_TYPE_COLORS[event.event_type]?.bg ?? 'bg-slate-700'
                       }`}>
                         <span className="text-[10px] font-bold text-slate-400">
                           {eventDate.toLocaleDateString('en-US', { month: 'short' })}

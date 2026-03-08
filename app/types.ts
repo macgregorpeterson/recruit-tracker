@@ -213,13 +213,13 @@ export const STATUS_ORDER: ApplicationStatus[] = [
   'accepted'
 ]
 
-export const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  'coffee': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  'info-session': 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  'phone-screen': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  'first-round': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  'superday': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  'follow-up': 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+export const EVENT_TYPE_COLORS: Record<EventType, { bg: string; text: string; border: string }> = {
+  'coffee': { bg: 'bg-amber-500/20', text: 'text-amber-300', border: 'border-amber-500/30' },
+  'info-session': { bg: 'bg-cyan-500/20', text: 'text-cyan-300', border: 'border-cyan-500/30' },
+  'phone-screen': { bg: 'bg-blue-500/20', text: 'text-blue-300', border: 'border-blue-500/30' },
+  'first-round': { bg: 'bg-yellow-500/20', text: 'text-yellow-300', border: 'border-yellow-500/30' },
+  'superday': { bg: 'bg-purple-500/20', text: 'text-purple-300', border: 'border-purple-500/30' },
+  'follow-up': { bg: 'bg-pink-500/20', text: 'text-pink-300', border: 'border-pink-500/30' },
 }
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {

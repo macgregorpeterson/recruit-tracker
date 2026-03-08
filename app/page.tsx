@@ -40,7 +40,10 @@ import {
   Keyboard,
   GitCommit,
   Scale,
-  FolderOpen
+  FolderOpen,
+  Trophy,
+  Zap,
+  Flame
 } from 'lucide-react'
 import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
 
@@ -62,6 +65,10 @@ import { NetworkingTimeline } from './components/NetworkingTimeline'
 import { OfferComparisonTool } from './components/OfferComparisonTool'
 import { DocumentVault } from './components/DocumentVault'
 import { EnhancedAnalytics } from './components/EnhancedAnalytics'
+import { GamificationProfile } from './components/GamificationProfile'
+import { DealFlowVisualization } from './components/DealFlowVisualization'
+import { QuickActionsFab } from './components/QuickActions'
+import { BulkActions } from './components/BulkActions'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -112,7 +119,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -274,6 +281,9 @@ export default function RecruitTracker() {
             break
           case '9':
             setActiveTab('prep')
+            break
+          case '0':
+            setActiveTab('gamification')
             break
           case '?':
             setShowKeyboardShortcuts(true)
@@ -503,6 +513,19 @@ export default function RecruitTracker() {
                 icon={FolderOpen}
                 label="Documents"
               />
+              <NavButton 
+                active={activeTab === 'dealflow'} 
+                onClick={() => setActiveTab('dealflow')}
+                icon={TrendingUp}
+                label="Deal Flow"
+                count={applications.filter(a => !['rejected', 'withdrawn', 'accepted'].includes(a.status)).length}
+              />
+              <NavButton 
+                active={activeTab === 'gamification'} 
+                onClick={() => setActiveTab('gamification')}
+                icon={Trophy}
+                label="Progress"
+              />
             </div>
           </nav>
 
@@ -678,6 +701,20 @@ export default function RecruitTracker() {
                 {activeTab === 'documents' && (
                   <DocumentVault />
                 )}
+                {activeTab === 'dealflow' && (
+                  <DealFlowVisualization
+                    applications={applications}
+                    onSelectApplication={setSelectedApplication}
+                  />
+                )}
+                {activeTab === 'gamification' && (
+                  <GamificationProfile
+                    contacts={contacts}
+                    applications={applications}
+                    events={events}
+                    notes={notes}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           )}
@@ -705,6 +742,14 @@ export default function RecruitTracker() {
       {showKeyboardShortcuts && (
         <KeyboardShortcutsModal onClose={() => setShowKeyboardShortcuts(false)} />
       )}
+
+      {/* Quick Actions FAB */}
+      <QuickActionsFab
+        onAddContact={() => setShowContactModal(true)}
+        onAddApplication={() => setShowApplicationModal(true)}
+        onAddEvent={() => setShowEventModal(true)}
+        onAddNote={() => setShowNoteModal(true)}
+      />
     </div>
   )
 }
@@ -764,6 +809,7 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
     { key: '7', action: 'Go to Firm Research', category: 'Navigation' },
     { key: '8', action: 'Go to Reminders', category: 'Navigation' },
     { key: '9', action: 'Go to Interview Prep', category: 'Navigation' },
+    { key: '0', action: 'Go to Progress', category: 'Navigation' },
     { key: '?', action: 'Show this help', category: 'Navigation' },
     { key: 'Esc', action: 'Close modals', category: 'Navigation' },
   ]

@@ -12,7 +12,12 @@ import {
   Coffee,
   Building2,
   Clock,
-  MoreHorizontal
+  MoreHorizontal,
+  Filter,
+  ChevronDown,
+  Sparkles,
+  Target,
+  TrendingUp
 } from 'lucide-react'
 
 // Types
@@ -24,6 +29,7 @@ interface Contact {
   email: string
   lastContact: string
   tags: string[]
+  priority: 'high' | 'medium' | 'low'
 }
 
 interface Application {
@@ -32,120 +38,131 @@ interface Application {
   role: string
   status: 'applied' | 'phone' | 'first' | 'second' | 'superday' | 'offer' | 'rejected'
   appliedDate: string
+  notes: string
 }
 
 // Sample Data
 const SAMPLE_CONTACTS: Contact[] = [
-  { id: '1', name: 'John Smith', firm: 'Goldman Sachs', title: 'Managing Director', email: 'john.smith@gs.com', lastContact: '2 days ago', tags: ['Referral', 'Met at Event'] },
-  { id: '2', name: 'Sarah Chen', firm: 'Blackstone', title: 'Principal', email: 'sarah.chen@bx.com', lastContact: '1 week ago', tags: ['Alumni'] },
-  { id: '3', name: 'Mike Johnson', firm: 'JP Morgan', title: 'VP', email: 'mike.j@jpm.com', lastContact: '3 days ago', tags: ['Cold Outreach'] },
-  { id: '4', name: 'Emily Davis', firm: 'KKR', title: 'Partner', email: 'emily.davis@kkr.com', lastContact: '2 weeks ago', tags: ['Referral', 'Follow-up'] },
+  { id: '1', name: 'John Smith', firm: 'Goldman Sachs', title: 'Managing Director', email: 'john.smith@gs.com', lastContact: '2 days ago', tags: ['Referral', 'Met at Event'], priority: 'high' },
+  { id: '2', name: 'Sarah Chen', firm: 'Blackstone', title: 'Principal', email: 'sarah.chen@bx.com', lastContact: '1 week ago', tags: ['Alumni'], priority: 'high' },
+  { id: '3', name: 'Mike Johnson', firm: 'JP Morgan', title: 'VP', email: 'mike.j@jpm.com', lastContact: '3 days ago', tags: ['Cold Outreach'], priority: 'medium' },
+  { id: '4', name: 'Emily Davis', firm: 'KKR', title: 'Partner', email: 'emily.davis@kkr.com', lastContact: '2 weeks ago', tags: ['Referral', 'Follow-up'], priority: 'high' },
+  { id: '5', name: 'David Park', firm: 'Carlyle', title: 'Managing Director', email: 'david.park@carlyle.com', lastContact: '1 month ago', tags: ['Cold Outreach'], priority: 'low' },
 ]
 
 const SAMPLE_APPLICATIONS: Application[] = [
-  { id: '1', firm: 'Goldman Sachs', role: 'Investment Banking Associate', status: 'superday', appliedDate: '2024-02-15' },
-  { id: '2', firm: 'Blackstone', role: 'Private Equity Associate', status: 'first', appliedDate: '2024-02-10' },
-  { id: '3', firm: 'KKR', role: 'Private Equity Associate', status: 'applied', appliedDate: '2024-03-01' },
-  { id: '4', firm: 'Bain Capital', role: 'Private Equity Associate', status: 'phone', appliedDate: '2024-02-20' },
-  { id: '5', firm: 'Carlyle', role: 'Investment Associate', status: 'second', appliedDate: '2024-01-28' },
+  { id: '1', firm: 'Goldman Sachs', role: 'Investment Banking Associate', status: 'superday', appliedDate: '2024-02-15', notes: 'Superday scheduled for next week' },
+  { id: '2', firm: 'Blackstone', role: 'Private Equity Associate', status: 'first', appliedDate: '2024-02-10', notes: 'Waiting to hear back' },
+  { id: '3', firm: 'KKR', role: 'Private Equity Associate', status: 'applied', appliedDate: '2024-03-01', notes: 'Applied online, no response yet' },
+  { id: '4', firm: 'Bain Capital', role: 'Private Equity Associate', status: 'phone', appliedDate: '2024-02-20', notes: 'Phone screen completed' },
+  { id: '5', firm: 'Carlyle', role: 'Investment Associate', status: 'second', appliedDate: '2024-01-28', notes: 'Second round next week' },
 ]
 
-const STATUS_COLORS: Record<string, string> = {
-  applied: 'bg-gray-100 text-gray-800',
-  phone: 'bg-blue-100 text-blue-800',
-  first: 'bg-yellow-100 text-yellow-800',
-  second: 'bg-orange-100 text-orange-800',
-  superday: 'bg-purple-100 text-purple-800',
-  offer: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  applied: 'Applied',
-  phone: 'Phone Screen',
-  first: 'First Round',
-  second: 'Second Round',
-  superday: 'Superday',
-  offer: 'Offer',
-  rejected: 'Rejected',
+const STATUS_CONFIG: Record<string, { label: string; color: string; gradient: string }> = {
+  applied: { label: 'Applied', color: 'text-slate-400', gradient: 'from-slate-500/20 to-slate-600/20' },
+  phone: { label: 'Phone', color: 'text-blue-400', gradient: 'from-blue-500/20 to-blue-600/20' },
+  first: { label: '1st Round', color: 'text-amber-400', gradient: 'from-amber-500/20 to-amber-600/20' },
+  second: { label: '2nd Round', color: 'text-orange-400', gradient: 'from-orange-500/20 to-orange-600/20' },
+  superday: { label: 'Superday', color: 'text-purple-400', gradient: 'from-purple-500/20 to-purple-600/20' },
+  offer: { label: 'Offer', color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-emerald-600/20' },
+  rejected: { label: 'Rejected', color: 'text-rose-400', gradient: 'from-rose-500/20 to-rose-600/20' },
 }
 
 export default function RecruitTracker() {
   const [activeTab, setActiveTab] = useState<'coverage' | 'pipeline' | 'calendar' | 'notes'>('coverage')
   const [searchQuery, setSearchQuery] = useState('')
 
+  const stats = {
+    contacts: SAMPLE_CONTACTS.length,
+    applications: SAMPLE_APPLICATIONS.length,
+    interviews: 3,
+    offers: 0
+  }
+
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-slate-950 text-slate-200">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-slate-900/50 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-lg font-semibold text-gray-900">RecruitTracker</h1>
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-tight">RecruitTracker</h1>
+              <p className="text-xs text-slate-500">Banking Recruiting Command Center</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search coverage book, firms, notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 w-80 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-9 pr-4 py-2 w-80 bg-slate-800/50 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
               />
             </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30">
+              <Plus className="w-4 h-4" />
+              <span>Add New</span>
+            </button>
           </div>
         </div>
       </header>
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
-          <div className="p-4">
-            <button className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              <Plus className="w-4 h-4" />
-              Quick Add
-            </button>
+        <aside className="w-72 bg-slate-900/30 border-r border-slate-800 min-h-screen">
+          {/* Stats Cards */}
+          <div className="p-4 grid grid-cols-2 gap-3">
+            <StatCard icon={Users} label="Contacts" value={stats.contacts} trend="+2" />
+            <StatCard icon={Briefcase} label="Applications" value={stats.applications} trend="+1" />
           </div>
 
-          <nav className="px-3 space-y-1">
+          <nav className="px-3 space-y-1 mt-2">
             <NavButton 
               active={activeTab === 'coverage'} 
               onClick={() => setActiveTab('coverage')}
-              icon={Users}
+              icon={Target}
               label="Coverage Book"
-              count={4}
+              count={stats.contacts}
             />
             <NavButton 
               active={activeTab === 'pipeline'} 
               onClick={() => setActiveTab('pipeline')}
-              icon={Briefcase}
+              icon={TrendingUp}
               label="Pipeline"
-              count={5}
+              count={stats.applications}
             />
             <NavButton 
               active={activeTab === 'calendar'} 
               onClick={() => setActiveTab('calendar')}
               icon={Calendar}
               label="Calendar"
+              count={8}
             />
             <NavButton 
               active={activeTab === 'notes'} 
               onClick={() => setActiveTab('notes')}
               icon={FileText}
               label="Notes"
+              count={12}
             />
           </nav>
 
-          <div className="mt-8 px-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">This Week</p>
+          {/* Quick Stats */}
+          <div className="mt-6 mx-4 p-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <span className="text-sm font-medium text-indigo-300">This Week</span>
+            </div>
             <div className="space-y-2">
-              <Stat label="Meetings" value="8" />
-              <Stat label="Applications" value="12" />
-              <Stat label="Interviews" value="3" />
+              <QuickStat label="Meetings" value="8" />
+              <QuickStat label="Interviews" value="3" />
+              <QuickStat label="Offers" value="0" />
             </div>
           </div>
         </aside>
@@ -162,98 +179,117 @@ export default function RecruitTracker() {
   )
 }
 
+// Stat Card
+function StatCard({ icon: Icon, label, value, trend }: { icon: any; label: string; value: number; trend: string }) {
+  return (
+    <div className="p-3 bg-slate-800/50 border border-slate-700 rounded-xl">
+      <div className="flex items-center justify-between mb-2">
+        <Icon className="w-4 h-4 text-slate-400" />
+        <span className="text-xs text-emerald-400 font-medium">{trend}</span>
+      </div>
+      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-xs text-slate-500">{label}</div>
+    </div>
+  )
+}
+
 // Navigation Button
 function NavButton({ active, onClick, icon: Icon, label, count }: {
   active: boolean
   onClick: () => void
-  icon: React.ElementType
+  icon: any
   label: string
-  count?: number
+  count: number
 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-        active ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+        active 
+          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20' 
+          : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
       }`}
     >
       <div className="flex items-center gap-3">
         <Icon className="w-4 h-4" />
         {label}
       </div>
-      {count !== undefined && (
-        <span className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-          {count}
-        </span>
-      )}
+      <span className={`text-xs px-2 py-0.5 rounded-full ${
+        active ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-500'
+      }`}>
+        {count}
+      </span>
     </button>
   )
 }
 
-// Stat Component
-function Stat({ label, value }: { label: string; value: string }) {
+// Quick Stat
+function QuickStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-gray-600">{label}</span>
-      <span className="font-medium text-gray-900">{value}</span>
+      <span className="text-slate-400">{label}</span>
+      <span className="font-semibold text-slate-200">{value}</span>
     </div>
   )
 }
 
-// Coverage Book Tab (formerly Rolodex)
+// Coverage Book Tab
 function CoverageBookTab({ contacts }: { contacts: Contact[] }) {
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Coverage Book</h2>
-          <p className="text-sm text-gray-500 mt-1">Your network across firms</p>
+          <h2 className="text-2xl font-bold text-white">Coverage Book</h2>
+          <p className="text-sm text-slate-400 mt-1">Your network across {new Set(contacts.map(c => c.firm)).size} firms</p>
         </div>
         <div className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Search by name or firm..."
-            className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-          />
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-sm text-slate-300 hover:bg-slate-800 transition-all">
+            <Filter className="w-4 h-4" />
+            Filter
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20">
+            <Plus className="w-4 h-4" />
             Add Contact
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-slate-800/50 border-b border-slate-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Firm</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Contact</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tags</th>
-              <th className="px-6 py-3"></th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Firm</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Title</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Last Contact</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Priority</th>
+              <th className="px-6 py-4"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-800">
             {contacts.map((contact) => (
-              <tr key={contact.id} className="hover:bg-gray-50">
+              <tr key={contact.id} className="hover:bg-slate-800/30 transition-colors group">
                 <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{contact.name}</div>
-                  <div className="text-sm text-gray-500">{contact.email}</div>
-                </td>
-                <td className="px-6 py-4 text-gray-700">{contact.firm}</td>
-                <td className="px-6 py-4 text-gray-700">{contact.title}</td>
-                <td className="px-6 py-4 text-gray-500">{contact.lastContact}</td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-1 flex-wrap">
-                    {contact.tags.map((tag) => (
-                      <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
-                        {tag}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30">
+                      <span className="text-sm font-bold text-indigo-300">
+                        {contact.name.split(' ').map(n => n[0]).join('')}
                       </span>
-                    ))}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white group-hover:text-indigo-300 transition-colors">{contact.name}</div>
+                      <div className="text-sm text-slate-500">{contact.email}</div>
+                    </div>
                   </div>
                 </td>
+                <td className="px-6 py-4 text-slate-300">{contact.firm}</td>
+                <td className="px-6 py-4 text-slate-400">{contact.title}</td>
+                <td className="px-6 py-4 text-slate-500">{contact.lastContact}</td>
+                <td className="px-6 py-4">
+                  <PriorityBadge priority={contact.priority} />
+                </td>
                 <td className="px-6 py-4 text-right">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  <button className="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors">
                     View
                   </button>
                 </td>
@@ -266,15 +302,33 @@ function CoverageBookTab({ contacts }: { contacts: Contact[] }) {
   )
 }
 
+// Priority Badge
+function PriorityBadge({ priority }: { priority: string }) {
+  const colors: Record<string, string> = {
+    high: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    medium: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    low: 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+  }
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${colors[priority] || colors.low}`}>
+      {priority.charAt(0).toUpperCase() + priority.slice(1)}
+    </span>
+  )
+}
+
 // Pipeline Tab
 function PipelineTab({ applications }: { applications: Application[] }) {
   const stages = ['applied', 'phone', 'first', 'second', 'superday', 'offer', 'rejected'] as const
   
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Application Pipeline</h2>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Application Pipeline</h2>
+          <p className="text-sm text-slate-400 mt-1">Track your recruiting progress</p>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20">
+          <Plus className="w-4 h-4" />
           Add Application
         </button>
       </div>
@@ -282,23 +336,29 @@ function PipelineTab({ applications }: { applications: Application[] }) {
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const stageApps = applications.filter((app) => app.status === stage)
+          const config = STATUS_CONFIG[stage]
           return (
-            <div key={stage} className="flex-shrink-0 w-72">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold text-gray-900">{STATUS_LABELS[stage]}</h3>
-                  <span className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+            <div key={stage} className="flex-shrink-0 w-80">
+              <div className={`p-4 rounded-2xl bg-gradient-to-b ${config.gradient} border border-slate-700/50`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className={`font-semibold ${config.color}`}>{config.label}</h3>
+                  <span className="bg-slate-800/50 text-slate-300 text-xs px-2 py-1 rounded-full">
                     {stageApps.length}
                   </span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {stageApps.map((app) => (
-                    <div key={app.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                      <div className="font-medium text-gray-900">{app.firm}</div>
-                      <div className="text-sm text-gray-600">{app.role}</div>
-                      <div className="text-xs text-gray-400 mt-2">
+                    <div key={app.id} className="bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50 hover:border-slate-600/50 transition-all group cursor-pointer">
+                      <div className="font-semibold text-white mb-1">{app.firm}</div>
+                      <div className="text-sm text-slate-400 mb-3">{app.role}</div>
+                      <div className="text-xs text-slate-500">
                         Applied {new Date(app.appliedDate).toLocaleDateString()}
                       </div>
+                      {app.notes && (
+                        <div className="mt-3 pt-3 border-t border-slate-700/50 text-xs text-slate-400">
+                          {app.notes}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -315,56 +375,90 @@ function PipelineTab({ applications }: { applications: Application[] }) {
 function CalendarTab() {
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Calendar</h2>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Calendar</h2>
+          <p className="text-sm text-slate-400 mt-1">Upcoming recruiting events</p>
+        </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
-            Connect Google Calendar
+          <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-sm text-slate-300 hover:bg-slate-800 transition-all">
+            <Building2 className="w-4 h-4" />
+            Connect Google
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20">
+            <Plus className="w-4 h-4" />
             Add Event
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Calendar className="w-8 h-8 text-gray-400" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Connect Your Calendar</h3>
-        <p className="text-gray-500 mb-6 max-w-md mx-auto">
-          Sync recruiting events from Google Calendar to track coffee chats, interviews, and follow-ups
-        </p>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
-          Connect Google Calendar
-        </button>
-      </div>
-
-      {/* Sample Events */}
-      <div className="mt-8">
-        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Upcoming</h3>
-        <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Upcoming Events */}
+        <div className="lg:col-span-2 space-y-4">
+          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Today</h3>
           <EventCard 
-            title="Coffee Chat - Goldman Sachs"
+            title="Coffee Chat"
             firm="Goldman Sachs"
             type="coffee"
-            time="Today, 2:00 PM"
+            time="2:00 PM"
             contact="John Smith"
+            description="Discuss team culture and deal flow"
           />
           <EventCard 
-            title="Superday - Blackstone"
-            firm="Blackstone"
-            type="interview"
-            time="Tomorrow, 9:00 AM"
-            contact="Recruiting Team"
-          />
-          <EventCard 
-            title="Follow-up Call"
+            title="Phone Screen"
             firm="KKR"
             type="phone"
-            time="Friday, 3:00 PM"
-            contact="Sarah Chen"
+            time="4:30 PM"
+            contact="Recruiting Team"
+            description="Initial screening with HR"
           />
+          
+          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mt-8">Tomorrow</h3>
+          <EventCard 
+            title="Superday"
+            firm="Blackstone"
+            type="interview"
+            time="9:00 AM"
+            contact="Multiple Interviewers"
+            description="Full day of interviews - bring 5 copies of resume"
+          />
+        </div>
+
+        {/* Mini Calendar */}
+        <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-6">
+          <h3 className="font-semibold text-white mb-4">March 2024</h3>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+            {['S','M','T','W','T','F','S'].map(d => (
+              <div key={d} className="text-slate-500 py-2">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 31 }, (_, i) => (
+              <button
+                key={i}
+                className={`aspect-square rounded-lg text-sm flex items-center justify-center transition-colors ${
+                  i + 1 === 8
+                    ? 'bg-indigo-600 text-white'
+                    : [5, 12, 15, 22].includes(i + 1)
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-400 hover:bg-slate-800/50'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 space-y-2">
+            <div className="text-xs text-slate-500">Legend</div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded bg-indigo-500/20 border border-indigo-500/30"></div>
+              <span className="text-slate-400">Has Events</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded bg-indigo-600"></div>
+              <span className="text-slate-400">Today</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -372,28 +466,37 @@ function CalendarTab() {
 }
 
 // Event Card
-function EventCard({ title, firm, type, time, contact }: {
+function EventCard({ title, firm, type, time, contact, description }: {
   title: string
   firm: string
   type: 'coffee' | 'interview' | 'phone'
   time: string
   contact: string
+  description: string
 }) {
   const icons = { coffee: Coffee, interview: Building2, phone: Phone }
+  const gradients = {
+    coffee: 'from-amber-500/20 to-orange-500/20 border-amber-500/30',
+    interview: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
+    phone: 'from-blue-500/20 to-indigo-500/20 border-blue-500/30'
+  }
   const Icon = icons[type]
   
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-4">
-      <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-        <Icon className="w-5 h-5 text-blue-600" />
+    <div className={`flex items-start gap-4 p-5 rounded-2xl bg-gradient-to-r ${gradients[type]} border backdrop-blur-sm`}>
+      <div className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-6 h-6 text-white" />
       </div>
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{title}</div>
-        <div className="text-sm text-gray-500">{firm} • {contact}</div>
-      </div>
-      <div className="text-sm text-gray-500 flex items-center gap-1">
-        <Clock className="w-4 h-4" />
-        {time}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between mb-1">
+          <h4 className="font-semibold text-white">{title} - {firm}</h4>
+          <span className="text-sm text-slate-400 flex items-center gap-1 flex-shrink-0 ml-4">
+            <Clock className="w-4 h-4" />
+            {time}
+          </span>
+        </div>
+        <p className="text-sm text-slate-300 mb-1">{contact}</p>
+        <p className="text-sm text-slate-400">{description}</p>
       </div>
     </div>
   )
@@ -403,9 +506,13 @@ function EventCard({ title, firm, type, time, contact }: {
 function NotesTab() {
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Notes</h2>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Notes</h2>
+          <p className="text-sm text-slate-400 mt-1">Call notes, interview prep, and research</p>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20">
+          <Plus className="w-4 h-4" />
           New Note
         </button>
       </div>
@@ -413,46 +520,49 @@ function NotesTab() {
       <div className="grid grid-cols-12 gap-6">
         {/* Folder Sidebar */}
         <div className="col-span-3">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900 mb-3">Folders</h3>
+          <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-4">
+            <h3 className="font-semibold text-white mb-4">Folders</h3>
             <div className="space-y-1">
-              <FolderItem name="All Notes" active />
-              <FolderItem name="Coverage Book Notes" />
-              <FolderItem name="Interview Prep" />
-              <FolderItem name="Firm Research" />
-              <FolderItem name="Personal" />
+              <FolderItem name="All Notes" count={12} active />
+              <FolderItem name="Coverage Book Notes" count={5} />
+              <FolderItem name="Interview Prep" count={3} />
+              <FolderItem name="Firm Research" count={2} />
+              <FolderItem name="Personal" count={2} />
             </div>
           </div>
         </div>
 
         {/* Notes List */}
         <div className="col-span-9">
-          <div className="bg-white rounded-xl border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
+          <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-slate-800">
               <input
                 type="text"
                 placeholder="Search notes..."
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
-            <div className="divide-y divide-gray-100">
-              <NoteItem 
+            <div className="divide-y divide-slate-800">
+              <NoteListItem 
                 title="Goldman Coffee Chat - John Smith"
-                preview="Discussed team culture and deal flow. They're looking for someone with strong modeling skills..."
+                preview="Discussed team culture and deal flow. They're looking for someone with strong modeling skills and entrepreneurial mindset..."
                 date="Mar 5"
                 linkedTo="Coverage Book: John Smith"
+                tags={['Referral', 'High Priority']}
               />
-              <NoteItem 
+              <NoteListItem 
                 title="Blackstone Superday Prep"
-                preview="Key technical questions to review: LBO modeling, Paper LBO walkthrough, Market outlook..."
+                preview="Key technical questions to review: LBO modeling, Paper LBO walkthrough, Market outlook, Why PE, Why Blackstone..."
                 date="Mar 3"
                 linkedTo="Interview Prep"
+                tags={['Superday']}
               />
-              <NoteItem 
+              <NoteListItem 
                 title="KKR Process Update"
-                preview="Spoke with recruiter. They're moving to first rounds next week. Need to prepare for..."
+                preview="Spoke with recruiter. They're moving to first rounds next week. Need to prepare for 3 back-to-back interviews..."
                 date="Mar 1"
                 linkedTo="Coverage Book: KKR"
+                tags={['Process Update']}
               />
             </div>
           </div>
@@ -463,33 +573,47 @@ function NotesTab() {
 }
 
 // Folder Item
-function FolderItem({ name, active }: { name: string; active?: boolean }) {
+function FolderItem({ name, count, active }: { name: string; count: number; active?: boolean }) {
   return (
-    <button className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-      active ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
+    <button className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
+      active 
+        ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/30' 
+        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
     }`}>
-      {name}
+      <span>{name}</span>
+      <span className={`text-xs ${active ? 'text-indigo-400' : 'text-slate-600'}`}>{count}</span>
     </button>
   )
 }
 
-// Note Item
-function NoteItem({ title, preview, date, linkedTo }: {
+// Note List Item
+function NoteListItem({ title, preview, date, linkedTo, tags }: {
   title: string
   preview: string
   date: string
   linkedTo: string
+  tags: string[]
 }) {
   return (
-    <div className="p-4 hover:bg-gray-50 cursor-pointer">
-      <div className="flex justify-between items-start mb-1">
-        <h4 className="font-medium text-gray-900">{title}</h4>
-        <span className="text-xs text-gray-400">{date}</span>
+    <div className="p-5 hover:bg-slate-800/30 transition-colors cursor-pointer group">
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="font-semibold text-white group-hover:text-indigo-300 transition-colors">{title}</h4>
+        <span className="text-xs text-slate-500">{date}</span>
       </div>
-      <p className="text-sm text-gray-500 mb-2">{preview}</p>
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-        Linked: {linkedTo}
-      </span>
+      <p className="text-sm text-slate-400 mb-3 line-clamp-2">{preview}</p>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-slate-500 flex items-center gap-1">
+          <Users className="w-3 h-3" />
+          {linkedTo}
+        </span>
+        <div className="flex gap-1">
+          {tags.map((tag) => (
+            <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

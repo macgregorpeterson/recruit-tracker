@@ -47,7 +47,11 @@ import {
   FileEdit,
   Link2,
   Smartphone,
-  CalendarClock
+  CalendarClock,
+  Network,
+  Mic,
+  Newspaper,
+  Activity
 } from 'lucide-react'
 import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
 
@@ -86,6 +90,10 @@ import { InterviewPerformanceTracker } from './components/InterviewPerformanceTr
 import { DealNewsFeed } from './components/DealNewsFeed'
 import { ApplicationTemplates } from './components/ApplicationTemplates'
 import { PipelineVelocityTracker } from './components/PipelineVelocityTracker'
+import { RelationshipGraph } from './components/RelationshipGraph'
+import { SalaryBenchmarking } from './components/SalaryBenchmarking'
+import { VoiceNotes } from './components/VoiceNotes'
+import { MarketIntelligence } from './components/MarketIntelligence'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -136,7 +144,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights' | 'coverletter' | 'scheduler' | 'mobile' | 'referrals' | 'email' | 'calendarsync' | 'performance' | 'deals' | 'apptemplates' | 'velocity'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights' | 'coverletter' | 'scheduler' | 'mobile' | 'referrals' | 'email' | 'calendarsync' | 'performance' | 'deals' | 'apptemplates' | 'velocity' | 'networkgraph' | 'salary' | 'voicenotes' | 'marketintel'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -351,6 +359,27 @@ export default function RecruitTracker() {
           case 'V':
             if (e.shiftKey) {
               setActiveTab('velocity')
+            }
+            break
+          case 'g':
+          case 'G':
+            if (e.shiftKey) {
+              setActiveTab('networkgraph')
+            }
+            break
+          case '$':
+            setActiveTab('salary')
+            break
+          case 'n':
+          case 'N':
+            if (e.shiftKey) {
+              setActiveTab('voicenotes')
+            }
+            break
+          case 'i':
+          case 'I':
+            if (e.shiftKey) {
+              setActiveTab('marketintel')
             }
             break
           case '?':
@@ -676,6 +705,34 @@ export default function RecruitTracker() {
                 label="Pipeline Velocity"
               />
             </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-800">
+              <p className="px-3 text-xs font-medium text-slate-600 uppercase tracking-wider mb-2">Visionary v5.0</p>
+              <NavButton 
+                active={activeTab === 'networkgraph'} 
+                onClick={() => setActiveTab('networkgraph')}
+                icon={Network}
+                label="Relationship Graph"
+              />
+              <NavButton 
+                active={activeTab === 'salary'} 
+                onClick={() => setActiveTab('salary')}
+                icon={DollarSign}
+                label="Salary Benchmarks"
+              />
+              <NavButton 
+                active={activeTab === 'voicenotes'} 
+                onClick={() => setActiveTab('voicenotes')}
+                icon={Mic}
+                label="Voice Notes"
+              />
+              <NavButton 
+                active={activeTab === 'marketintel'} 
+                onClick={() => setActiveTab('marketintel')}
+                icon={Newspaper}
+                label="Market Intelligence"
+              />
+            </div>
           </nav>
 
           <div className="mt-8 px-4">
@@ -964,6 +1021,26 @@ export default function RecruitTracker() {
                     }}
                   />
                 )}
+                {activeTab === 'networkgraph' && (
+                  <RelationshipGraph
+                    contacts={contacts}
+                    applications={applications}
+                    onNodeClick={(type, id) => console.log(type, id)}
+                    onNavigate={setActiveTab}
+                  />
+                )}
+                {activeTab === 'salary' && (
+                  <SalaryBenchmarking applications={applications} />
+                )}
+                {activeTab === 'voicenotes' && (
+                  <VoiceNotes onSaveNote={(note) => console.log('Note saved:', note)} />
+                )}
+                {activeTab === 'marketintel' && (
+                  <MarketIntelligence
+                    onTrackFirm={(firm) => console.log('Tracking firm:', firm)}
+                    onSaveNews={(news) => console.log('News saved:', news)}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           )}
@@ -1073,6 +1150,10 @@ function KeyboardShortcutsModal({ onClose }: { onClose: () => void }) {
     { key: 'L', action: 'Go to AI Cover Letter', category: 'Power Tools' },
     { key: 'M', action: 'Go to Mobile & PWA', category: 'Power Tools' },
     { key: 'C', action: 'Go to Calendar Sync', category: 'Power Tools' },
+    { key: '⇧G', action: 'Go to Relationship Graph', category: 'Visionary v5.0' },
+    { key: '$', action: 'Go to Salary Benchmarks', category: 'Visionary v5.0' },
+    { key: '⇧N', action: 'Go to Voice Notes', category: 'Visionary v5.0' },
+    { key: '⇧I', action: 'Go to Market Intelligence', category: 'Visionary v5.0' },
     { key: '?', action: 'Show this help', category: 'Navigation' },
     { key: 'Esc', action: 'Close modals', category: 'Navigation' },
   ]

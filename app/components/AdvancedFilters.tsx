@@ -49,7 +49,7 @@ export function AdvancedFilters({
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
   const [tempValue, setTempValue] = useState<any>('')
 
-  const addFilter = (field: string, operator: string, value: any) => {
+  const addFilter = (field: string, operator: FilterValue['operator'], value: any) => {
     const existingIndex = activeFilters.findIndex(f => f.field === field)
     const newFilter = { field, operator, value }
     

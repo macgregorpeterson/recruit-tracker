@@ -82,6 +82,10 @@ import { PWAManager } from './components/PWAManager'
 import { ReferralTracker } from './components/ReferralTracker'
 import { EmailIntegrationHub } from './components/EmailIntegrationHub'
 import { CalendarSyncManager } from './components/CalendarSyncManager'
+import { InterviewPerformanceTracker } from './components/InterviewPerformanceTracker'
+import { DealNewsFeed } from './components/DealNewsFeed'
+import { ApplicationTemplates } from './components/ApplicationTemplates'
+import { PipelineVelocityTracker } from './components/PipelineVelocityTracker'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -132,7 +136,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights' | 'coverletter' | 'scheduler' | 'mobile' | 'referrals' | 'email' | 'calendarsync'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents' | 'gamification' | 'dealflow' | 'insights' | 'coverletter' | 'scheduler' | 'mobile' | 'referrals' | 'email' | 'calendarsync' | 'performance' | 'deals' | 'apptemplates' | 'velocity'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -323,6 +327,30 @@ export default function RecruitTracker() {
           case 'C':
             if (e.shiftKey) {
               setActiveTab('calendarsync')
+            }
+            break
+          case 'p':
+          case 'P':
+            if (e.shiftKey) {
+              setActiveTab('performance')
+            }
+            break
+          case 'd':
+          case 'D':
+            if (e.shiftKey) {
+              setActiveTab('deals')
+            }
+            break
+          case 't':
+          case 'T':
+            if (e.shiftKey) {
+              setActiveTab('apptemplates')
+            }
+            break
+          case 'v':
+          case 'V':
+            if (e.shiftKey) {
+              setActiveTab('velocity')
             }
             break
           case '?':
@@ -620,6 +648,34 @@ export default function RecruitTracker() {
                 label="Calendar Sync"
               />
             </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-800">
+              <p className="px-3 text-xs font-medium text-slate-600 uppercase tracking-wider mb-2">New Features</p>
+              <NavButton 
+                active={activeTab === 'performance'} 
+                onClick={() => setActiveTab('performance')}
+                icon={Trophy}
+                label="Interview Performance"
+              />
+              <NavButton 
+                active={activeTab === 'deals'} 
+                onClick={() => setActiveTab('deals')}
+                icon={TrendingUp}
+                label="Deal & News Feed"
+              />
+              <NavButton 
+                active={activeTab === 'apptemplates'} 
+                onClick={() => setActiveTab('apptemplates')}
+                icon={FileText}
+                label="App Templates"
+              />
+              <NavButton 
+                active={activeTab === 'velocity'} 
+                onClick={() => setActiveTab('velocity')}
+                icon={Target}
+                label="Pipeline Velocity"
+              />
+            </div>
           </nav>
 
           <div className="mt-8 px-4">
@@ -866,6 +922,46 @@ export default function RecruitTracker() {
                   <CalendarSyncManager
                     events={events}
                     onSync={() => console.log('Calendar synced')}
+                  />
+                )}
+                {activeTab === 'performance' && (
+                  <InterviewPerformanceTracker
+                    applications={applications}
+                    events={events}
+                    onAddPerformance={(performance) => {
+                      console.log('Performance added:', performance)
+                    }}
+                    onUpdatePerformance={(id, updates) => {
+                      console.log('Performance updated:', id, updates)
+                    }}
+                  />
+                )}
+                {activeTab === 'deals' && (
+                  <DealNewsFeed
+                    onTrackFirm={(firm) => {
+                      console.log('Tracking firm:', firm)
+                    }}
+                    onAddNote={(news) => {
+                      console.log('Note added for news:', news)
+                    }}
+                    trackedFirms={['Goldman Sachs', 'Evercore', 'Blackstone']}
+                  />
+                )}
+                {activeTab === 'apptemplates' && (
+                  <ApplicationTemplates
+                    onUseTemplate={(template, variables) => {
+                      console.log('Template used:', template, variables)
+                    }}
+                    applications={applications}
+                  />
+                )}
+                {activeTab === 'velocity' && (
+                  <PipelineVelocityTracker
+                    applications={applications}
+                    onViewApplication={(id) => {
+                      const app = applications.find(a => a.id === id)
+                      if (app) setSelectedApplication(app)
+                    }}
                   />
                 )}
               </motion.div>

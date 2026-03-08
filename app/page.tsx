@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Users, 
   Calendar, 
@@ -13,8 +14,27 @@ import {
   Coffee,
   Building2,
   Clock,
-  LogOut
+  LogOut,
+  LayoutDashboard,
+  Target,
+  Sparkles,
+  Brain,
+  ChevronRight,
+  TrendingUp,
+  Award,
+  BarChart3,
+  ArrowUpRight,
+  X,
+  Mail,
+  MapPin,
+  DollarSign,
+  CheckCircle2,
+  MoreHorizontal,
+  Filter,
+  Download,
+  RefreshCw
 } from 'lucide-react'
+import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -22,55 +42,71 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Types
-interface Contact {
-  id: string
-  name: string
-  firm: string
-  title: string
-  email: string
-  lastContact: string
-  tags: string[]
+const STATUS_COLORS: Record<ApplicationStatus, { bg: string; text: string; border: string }> = {
+  applied: { bg: 'bg-slate-500/20', text: 'text-slate-300', border: 'border-slate-500/30' },
+  'phone-screen': { bg: 'bg-blue-500/20', text: 'text-blue-300', border: 'border-blue-500/30' },
+  'first-round': { bg: 'bg-yellow-500/20', text: 'text-yellow-300', border: 'border-yellow-500/30' },
+  'second-round': { bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/30' },
+  superday: { bg: 'bg-purple-500/20', text: 'text-purple-300', border: 'border-purple-500/30' },
+  offer: { bg: 'bg-emerald-500/20', text: 'text-emerald-300', border: 'border-emerald-500/30' },
+  rejected: { bg: 'bg-red-500/20', text: 'text-red-300', border: 'border-red-500/30' },
+  withdrawn: { bg: 'bg-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/30' },
+  accepted: { bg: 'bg-green-500/20', text: 'text-green-300', border: 'border-green-500/30' },
 }
 
-interface Application {
-  id: string
-  firm: string
-  role: string
-  status: 'applied' | 'phone' | 'first' | 'second' | 'superday' | 'offer' | 'rejected'
-  appliedDate: string
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  applied: 'bg-gray-100 text-gray-800',
-  phone: 'bg-blue-100 text-blue-800',
-  first: 'bg-yellow-100 text-yellow-800',
-  second: 'bg-orange-100 text-orange-800',
-  superday: 'bg-purple-100 text-purple-800',
-  offer: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800',
-}
-
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
   applied: 'Applied',
-  phone: 'Phone Screen',
-  first: 'First Round',
-  second: 'Second Round',
+  'phone-screen': 'Phone Screen',
+  'first-round': 'First Round',
+  'second-round': 'Second Round',
   superday: 'Superday',
   offer: 'Offer',
   rejected: 'Rejected',
+  withdrawn: 'Withdrawn',
+  accepted: 'Accepted',
+}
+
+const EVENT_TYPE_COLORS: Record<EventType, { bg: string; text: string }> = {
+  coffee: { bg: 'bg-amber-500/20', text: 'text-amber-300' },
+  'info-session': { bg: 'bg-cyan-500/20', text: 'text-cyan-300' },
+  'phone-screen': { bg: 'bg-blue-500/20', text: 'text-blue-300' },
+  'first-round': { bg: 'bg-yellow-500/20', text: 'text-yellow-300' },
+  superday: { bg: 'bg-purple-500/20', text: 'text-purple-300' },
+  'follow-up': { bg: 'bg-pink-500/20', text: 'text-pink-300' },
+}
+
+const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  coffee: 'Coffee Chat',
+  'info-session': 'Info Session',
+  'phone-screen': 'Phone Screen',
+  'first-round': 'First Round',
+  superday: 'Superday',
+  'follow-up': 'Follow-up',
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'coverage' | 'pipeline' | 'calendar' | 'notes'>('coverage')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Modal states
+  const [showContactModal, setShowContactModal] = useState(false)
+  const [showApplicationModal, setShowApplicationModal] = useState(false)
+  const [showEventModal, setShowEventModal] = useState(false)
+  const [showNoteModal, setShowNoteModal] = useState(false)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
 
   useEffect(() => {
-    // Check auth status
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
@@ -86,47 +122,29 @@ export default function RecruitTracker() {
   const fetchData = async () => {
     setLoading(true)
     
-    // Fetch contacts
-    const { data: contactsData } = await supabase
-      .from('contacts')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const [{ data: contactsData }, { data: appsData }, { data: eventsData }, { data: notesData }] = await Promise.all([
+      supabase.from('contacts').select('*').order('created_at', { ascending: false }),
+      supabase.from('applications').select('*').order('created_at', { ascending: false }),
+      supabase.from('events').select('*').order('start_time', { ascending: true }),
+      supabase.from('notes').select('*').order('updated_at', { ascending: false }),
+    ])
     
-    if (contactsData) {
-      setContacts(contactsData.map(c => ({
-        id: c.id,
-        name: c.name,
-        firm: c.firm,
-        title: c.title || '',
-        email: c.email || '',
-        lastContact: 'Recently',
-        tags: c.tags || []
-      })))
-    }
-
-    // Fetch applications
-    const { data: appsData } = await supabase
-      .from('applications')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (appsData) {
-      setApplications(appsData.map(a => ({
-        id: a.id,
-        firm: a.firm,
-        role: a.role,
-        status: a.status,
-        appliedDate: a.applied_date || a.created_at
-      })))
-    }
+    if (contactsData) setContacts(contactsData)
+    if (appsData) setApplications(appsData)
+    if (eventsData) setEvents(eventsData)
+    if (notesData) setNotes(notesData)
     
     setLoading(false)
   }
 
+  const refreshData = async () => {
+    setRefreshing(true)
+    await fetchData()
+    setTimeout(() => setRefreshing(false), 500)
+  }
+
   const handleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    })
+    await supabase.auth.signInWithOAuth({ provider: 'google' })
   }
 
   const handleSignOut = async () => {
@@ -134,22 +152,99 @@ export default function RecruitTracker() {
     setUser(null)
     setContacts([])
     setApplications([])
+    setEvents([])
+    setNotes([])
   }
+
+  // Calculate dashboard stats
+  const dashboardStats: DashboardStats = {
+    totalContacts: contacts.length,
+    totalApplications: applications.length,
+    activeApplications: applications.filter(a => !['rejected', 'withdrawn', 'accepted'].includes(a.status)).length,
+    upcomingEvents: events.filter(e => new Date(e.start_time) > new Date()).length,
+    offersReceived: applications.filter(a => a.status === 'offer').length,
+    interviewsThisWeek: events.filter(e => {
+      const eventDate = new Date(e.start_time)
+      const now = new Date()
+      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+      return eventDate >= now && eventDate <= weekFromNow && ['phone-screen', 'first-round', 'superday'].includes(e.event_type)
+    }).length,
+    conversionRate: applications.length > 0 ? Math.round((applications.filter(a => a.status === 'offer').length / applications.length) * 100) : 0,
+    avgTimeToOffer: 0,
+    responseRate: 0,
+    topFirms: [],
+    stageDistribution: applications.reduce((acc, app) => {
+      acc[app.status] = (acc[app.status] || 0) + 1
+      return acc
+    }, {} as Record<ApplicationStatus, number>),
+  }
+
+  const recentActivity: RecentActivity[] = [
+    ...contacts.slice(0, 3).map(c => ({
+      id: c.id,
+      type: 'contact' as const,
+      action: 'created' as const,
+      title: `Added ${c.name}`,
+      entityName: c.firm,
+      timestamp: c.created_at || new Date().toISOString(),
+    })),
+    ...applications.slice(0, 3).map(a => ({
+      id: a.id,
+      type: 'application' as const,
+      action: 'created' as const,
+      title: `Applied to ${a.firm}`,
+      entityName: a.role,
+      timestamp: a.created_at || new Date().toISOString(),
+    })),
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5)
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === 'k') {
+        e.preventDefault()
+        setShowCommandPalette(prev => !prev)
+      }
+      if (e.key === 'Escape') {
+        setShowCommandPalette(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 max-w-md w-full">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        </div>
+        
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative bg-slate-900/80 backdrop-blur-xl p-8 rounded-2xl border border-slate-800 max-w-md w-full shadow-2xl"
+        >
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">RecruitTracker</h1>
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring' }}
+              className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20"
+            >
+              <Briefcase className="w-8 h-8 text-white" />
+            </motion.div>
+            <h1 className="text-3xl font-bold text-white mb-2">RecruitTracker</h1>
             <p className="text-slate-400">Your banking recruiting command center</p>
           </div>
-          <button
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleSignIn}
-            className="w-full py-3 px-4 bg-white text-slate-900 rounded-lg font-medium hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-white text-slate-900 rounded-xl font-medium hover:bg-slate-100 transition-colors flex items-center justify-center gap-3 shadow-lg"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -158,8 +253,12 @@ export default function RecruitTracker() {
               <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
             Sign in with Google
-          </button>
-        </div>
+          </motion.button>
+          
+          <p className="text-center text-xs text-slate-500 mt-6">
+            Secure authentication powered by Supabase
+          </p>
+        </motion.div>
       </div>
     )
   }
@@ -167,29 +266,42 @@ export default function RecruitTracker() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-10">
+      <header className="bg-slate-900/50 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-lg font-semibold text-white">RecruitTracker</h1>
+            <div>
+              <h1 className="text-lg font-bold text-white">RecruitTracker</h1>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={refreshData}
+              className={`p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all ${refreshing ? 'animate-spin' : ''}`}
+              title="Refresh data"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search coverage book, firms, notes..."
+                placeholder="Search... (⌘K)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 w-80 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                onFocus={() => setShowCommandPalette(true)}
+                className="pl-9 pr-4 py-2 w-64 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>
+            
             <button
               onClick={handleSignOut}
-              className="p-2 text-slate-400 hover:text-white transition-colors"
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              title="Sign out"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -199,15 +311,26 @@ export default function RecruitTracker() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-slate-900/30 border-r border-slate-800 min-h-screen">
+        <aside className="w-64 bg-slate-900/30 border-r border-slate-800 min-h-[calc(100vh-64px)] sticky top-16">
           <div className="p-4">
-            <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg font-medium hover:from-blue-500 hover:to-indigo-500 transition-all">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowContactModal(true)}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all"
+            >
               <Plus className="w-4 h-4" />
               Quick Add
-            </button>
+            </motion.button>
           </div>
 
           <nav className="px-3 space-y-1">
+            <NavButton 
+              active={activeTab === 'dashboard'} 
+              onClick={() => setActiveTab('dashboard')}
+              icon={LayoutDashboard}
+              label="Dashboard"
+            />
             <NavButton 
               active={activeTab === 'coverage'} 
               onClick={() => setActiveTab('coverage')}
@@ -227,23 +350,53 @@ export default function RecruitTracker() {
               onClick={() => setActiveTab('calendar')}
               icon={Calendar}
               label="Calendar"
+              count={events.filter(e => new Date(e.start_time) > new Date()).length}
             />
             <NavButton 
               active={activeTab === 'notes'} 
               onClick={() => setActiveTab('notes')}
               icon={FileText}
               label="Notes"
+              count={notes.length}
+            />
+            <NavButton 
+              active={activeTab === 'analytics'} 
+              onClick={() => setActiveTab('analytics')}
+              icon={BarChart3}
+              label="Analytics"
+            />
+            <NavButton 
+              active={activeTab === 'prep'} 
+              onClick={() => setActiveTab('prep')}
+              icon={Brain}
+              label="Interview Prep"
             />
           </nav>
 
           <div className="mt-8 px-4">
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">This Week</p>
             <div className="space-y-2">
-              <Stat label="Meetings" value="8" />
-              <Stat label="Applications" value={applications.length.toString()} />
+              <Stat label="Active Apps" value={dashboardStats.activeApplications.toString()} />
               <Stat label="Contacts" value={contacts.length.toString()} />
+              <Stat label="Interviews" value={dashboardStats.interviewsThisWeek.toString()} />
             </div>
           </div>
+
+          {/* Mini Progress */}
+          {applications.length > 0 && (
+            <div className="mt-6 px-4">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Pipeline Health</p>
+              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min((dashboardStats.offersReceived / Math.max(applications.filter(a => a.status === 'offer' || a.status === 'rejected').length, 1)) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                {dashboardStats.offersReceived} offers • {dashboardStats.conversionRate}% conversion
+              </p>
+            </div>
+          )}
         </aside>
 
         {/* Main Content */}
@@ -253,20 +406,165 @@ export default function RecruitTracker() {
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <>
-              {activeTab === 'coverage' && <CoverageBookTab contacts={contacts} />}
-              {activeTab === 'pipeline' && <PipelineTab applications={applications} />}
-              {activeTab === 'calendar' && <CalendarTab />}
-              {activeTab === 'notes' && <NotesTab />}
-            </>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeTab === 'dashboard' && (
+                  <DashboardTab 
+                    stats={dashboardStats}
+                    recentActivity={recentActivity}
+                    contacts={contacts}
+                    applications={applications}
+                    events={events}
+                    onNavigate={setActiveTab}
+                    onAddContact={() => setShowContactModal(true)}
+                    onAddApplication={() => setShowApplicationModal(true)}
+                    onAddEvent={() => setShowEventModal(true)}
+                    onAddNote={() => setShowNoteModal(true)}
+                  />
+                )}
+                {activeTab === 'coverage' && (
+                  <CoverageBookTab 
+                    contacts={contacts} 
+                    onAdd={() => setShowContactModal(true)}
+                    onSelect={setSelectedContact}
+                    applications={applications}
+                    notes={notes.filter(n => n.contact_id)}
+                  />
+                )}
+                {activeTab === 'pipeline' && (
+                  <PipelineTab 
+                    applications={applications}
+                    onAdd={() => setShowApplicationModal(true)}
+                    onSelect={setSelectedApplication}
+                    events={events}
+                    notes={notes.filter(n => n.application_id)}
+                  />
+                )}
+                {activeTab === 'calendar' && (
+                  <CalendarTab 
+                    events={events}
+                    onAdd={() => setShowEventModal(true)}
+                    onSelect={setSelectedEvent}
+                    contacts={contacts}
+                    applications={applications}
+                  />
+                )}
+                {activeTab === 'notes' && (
+                  <NotesTab 
+                    notes={notes}
+                    contacts={contacts}
+                    applications={applications}
+                    onAdd={() => setShowNoteModal(true)}
+                    onSelect={setSelectedNote}
+                  />
+                )}
+                {activeTab === 'analytics' && (
+                  <AnalyticsTab stats={dashboardStats} applications={applications} events={events} />
+                )}
+                {activeTab === 'prep' && (
+                  <InterviewPrepTab applications={applications} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           )}
         </main>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        contacts={contacts}
+        applications={applications}
+        events={events}
+        notes={notes}
+        onNavigate={(tab) => { setActiveTab(tab as any); setShowCommandPalette(false) }}
+        onAddContact={() => { setShowContactModal(true); setShowCommandPalette(false) }}
+        onAddApplication={() => { setShowApplicationModal(true); setShowCommandPalette(false) }}
+        onAddEvent={() => { setShowEventModal(true); setShowCommandPalette(false) }}
+        onAddNote={() => { setShowNoteModal(true); setShowCommandPalette(false) }}
+      />
+
+      {/* Modals */}
+      <AnimatePresence>
+        {showContactModal && (
+          <ContactModal
+            onClose={() => setShowContactModal(false)}
+            onSave={async (contact) => {
+              await supabase.from('contacts').insert([{ ...contact, user_id: user.id }])
+              fetchData()
+              setShowContactModal(false)
+            }}
+          />
+        )}
+        {showApplicationModal && (
+          <ApplicationModal
+            onClose={() => setShowApplicationModal(false)}
+            onSave={async (app) => {
+              await supabase.from('applications').insert([{ ...app, user_id: user.id }])
+              fetchData()
+              setShowApplicationModal(false)
+            }}
+          />
+        )}
+        {showEventModal && (
+          <EventModal
+            onClose={() => setShowEventModal(false)}
+            onSave={async (event) => {
+              await supabase.from('events').insert([{ ...event, user_id: user.id }])
+              fetchData()
+              setShowEventModal(false)
+            }}
+            contacts={contacts}
+            applications={applications}
+          />
+        )}
+        {showNoteModal && (
+          <NoteModal
+            onClose={() => setShowNoteModal(false)}
+            onSave={async (note) => {
+              await supabase.from('notes').insert([{ ...note, user_id: user.id }])
+              fetchData()
+              setShowNoteModal(false)
+            }}
+            contacts={contacts}
+            applications={applications}
+            events={events}
+          />
+        )}
+        {selectedContact && (
+          <ContactDetailModal
+            contact={selectedContact}
+            onClose={() => setSelectedContact(null)}
+            applications={applications.filter(a => a.firm === selectedContact.firm)}
+            notes={notes.filter(n => n.contact_id === selectedContact.id)}
+            events={events.filter(e => e.contact_ids?.includes(selectedContact.id))}
+          />
+        )}
+        {selectedApplication && (
+          <ApplicationDetailModal
+            application={selectedApplication}
+            onClose={() => setSelectedApplication(null)}
+            notes={notes.filter(n => n.application_id === selectedApplication.id)}
+            events={events.filter(e => e.firm === selectedApplication.firm)}
+            onStatusChange={async (status) => {
+              await supabase.from('applications').update({ status }).eq('id', selectedApplication.id)
+              fetchData()
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-// Navigation Button
+// Navigation Button Component
 function NavButton({ active, onClick, icon: Icon, label, count }: {
   active: boolean
   onClick: () => void
@@ -277,7 +575,7 @@ function NavButton({ active, onClick, icon: Icon, label, count }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
         active 
           ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -287,7 +585,7 @@ function NavButton({ active, onClick, icon: Icon, label, count }: {
         <Icon className="w-4 h-4" />
         {label}
       </div>
-      {count !== undefined && (
+      {count !== undefined && count > 0 && (
         <span className="bg-slate-800 text-slate-400 text-xs px-2 py-0.5 rounded-full">
           {count}
         </span>
@@ -306,346 +604,4 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-// Coverage Book Tab
-function CoverageBookTab({ contacts }: { contacts: Contact[] }) {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Coverage Book</h2>
-          <p className="text-sm text-slate-400 mt-1">Your network across firms</p>
-        </div>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Search by name or firm..."
-            className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-64"
-          />
-          <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-500 hover:to-indigo-500 transition-all">
-            Add Contact
-          </button>
-        </div>
-      </div>
-
-      {contacts.length === 0 ? (
-        <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-12 text-center">
-          <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-slate-600" />
-          </div>
-          <h3 className="text-lg font-medium text-white mb-2">No contacts yet</h3>
-          <p className="text-slate-400 mb-6">Start building your coverage book</p>
-          <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium">
-            Add Your First Contact
-          </button>
-        </div>
-      ) : (
-        <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-800/50 border-b border-slate-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Firm</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Tags</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {contacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-slate-200">{contact.name}</div>
-                    <div className="text-sm text-slate-500">{contact.email}</div>
-                  </td>
-                  <td className="px-6 py-4 text-slate-300">{contact.firm}</td>
-                  <td className="px-6 py-4 text-slate-300">{contact.title}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-1 flex-wrap">
-                      {contact.tags.map((tag) => (
-                        <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Pipeline Tab
-function PipelineTab({ applications }: { applications: Application[] }) {
-  const stages = ['applied', 'phone', 'first', 'second', 'superday', 'offer', 'rejected'] as const
-  
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Application Pipeline</h2>
-        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-500 hover:to-indigo-500 transition-all">
-          Add Application
-        </button>
-      </div>
-
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {stages.map((stage) => {
-          const stageApps = applications.filter((app) => app.status === stage)
-          return (
-            <div key={stage} className="flex-shrink-0 w-72">
-              <div className="bg-slate-900/30 border border-slate-800 rounded-lg p-3">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold text-slate-200">{STATUS_LABELS[stage]}</h3>
-                  <span className="bg-slate-800 text-slate-400 text-xs px-2 py-0.5 rounded-full">
-                    {stageApps.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {stageApps.map((app) => (
-                    <div key={app.id} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 hover:border-slate-600 transition-colors">
-                      <div className="font-medium text-slate-200">{app.firm}</div>
-                      <div className="text-sm text-slate-400">{app.role}</div>
-                      <div className="text-xs text-slate-500 mt-2">
-                        Applied {new Date(app.appliedDate).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// Calendar Tab - Manual Entry for Recruiting Events
-function CalendarTab() {
-  const [events, setEvents] = useState([
-    { id: '1', title: 'Coffee Chat with John Smith', firm: 'Goldman Sachs', type: 'coffee', date: '2026-03-10', time: '14:00', contact: 'John Smith', notes: 'Discuss team culture' },
-    { id: '2', title: 'Superday', firm: 'Blackstone', type: 'interview', date: '2026-03-11', time: '09:00', contact: 'Recruiting Team', notes: '4 rounds scheduled' },
-    { id: '3', title: 'Follow-up Call', firm: 'KKR', type: 'phone', date: '2026-03-13', time: '15:30', contact: 'Sarah Chen', notes: 'Process update' },
-  ])
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date())
-
-  const getDaysInMonth = () => {
-    const year = selectedDate.getFullYear()
-    const month = selectedDate.getMonth()
-    const days = new Date(year, month + 1, 0).getDate()
-    const firstDay = new Date(year, month, 1).getDay()
-    return { days, firstDay, month, year }
-  }
-
-  const { days, firstDay, month, year } = getDaysInMonth()
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  
-  const eventsForDay = (day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return events.filter(e => e.date === dateStr)
-  }
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Calendar</h2>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-500 hover:to-indigo-500 transition-all"
-        >
-          Add Event
-        </button>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6">
-        {/* Calendar Grid */}
-        <div className="col-span-8">
-          <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-6">
-            {/* Month Navigation */}
-            <div className="flex justify-between items-center mb-6">
-              <button 
-                onClick={() => setSelectedDate(new Date(year, month - 1, 1))}
-                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400"
-              >
-                ←
-              </button>
-              <h3 className="text-xl font-semibold text-white">{monthNames[month]} {year}</h3>
-              <button 
-                onClick={() => setSelectedDate(new Date(year, month + 1, 1))}
-                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400"
-              >
-                →
-              </button>
-            </div>
-
-            {/* Day Headers */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-slate-500 py-2">{day}</div>
-              ))}
-            </div>
-
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`empty-${i}`} className="h-24" />
-              ))}
-              {Array.from({ length: days }).map((_, day) => {
-                const dayNum = day + 1
-                const dayEvents = eventsForDay(dayNum)
-                const isToday = new Date().toDateString() === new Date(year, month, dayNum).toDateString()
-                
-                return (
-                  <div 
-                    key={dayNum}
-                    className={`h-24 border border-slate-800 rounded-lg p-2 ${isToday ? 'bg-blue-500/10 border-blue-500/30' : 'hover:bg-slate-800/30'} transition-colors cursor-pointer`}
-                  >
-                    <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-400' : 'text-slate-400'}`}>{dayNum}</div>
-                    <div className="space-y-1">
-                      {dayEvents.slice(0, 2).map(event => (
-                        <div key={event.id} className={`text-xs px-2 py-1 rounded truncate ${
-                          event.type === 'coffee' ? 'bg-amber-500/20 text-amber-400' :
-                          event.type === 'interview' ? 'bg-purple-500/20 text-purple-400' :
-                          'bg-blue-500/20 text-blue-400'
-                        }`}>
-                          {event.title}
-                        </div>
-                      ))}
-                      {dayEvents.length > 2 && (
-                        <div className="text-xs text-slate-500">+{dayEvents.length - 2} more</div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming Events List */}
-        <div className="col-span-4">
-          <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
-            <h3 className="font-semibold text-white mb-4">Upcoming Events</h3>
-            <div className="space-y-3">
-              {events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(event => (
-                <div key={event.id} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      event.type === 'coffee' ? 'bg-amber-500' :
-                      event.type === 'interview' ? 'bg-purple-500' :
-                      'bg-blue-500'
-                    }`} />
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-200 text-sm">{event.title}</div>
-                      <div className="text-xs text-slate-400">{event.firm} • {event.time}</div>
-                      <div className="text-xs text-slate-500 mt-1">{new Date(event.date).toLocaleDateString()}</div>
-                      {event.notes && <div className="text-xs text-slate-500 mt-1 italic">{event.notes}</div>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Notes Tab
-function NotesTab() {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Notes</h2>
-        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-500 hover:to-indigo-500 transition-all">
-          New Note
-        </button>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6">
-        {/* Folder Sidebar */}
-        <div className="col-span-3">
-          <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
-            <h3 className="font-semibold text-white mb-3">Folders</h3>
-            <div className="space-y-1">
-              <FolderItem name="All Notes" active />
-              <FolderItem name="Coverage Book Notes" />
-              <FolderItem name="Interview Prep" />
-              <FolderItem name="Firm Research" />
-              <FolderItem name="Personal" />
-            </div>
-          </div>
-        </div>
-
-        {/* Notes List */}
-        <div className="col-span-9">
-          <div className="bg-slate-900/30 border border-slate-800 rounded-xl">
-            <div className="p-4 border-b border-slate-800">
-              <input
-                type="text"
-                placeholder="Search notes..."
-                className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-              />
-            </div>
-            <div className="divide-y divide-slate-800">
-              <NoteItem 
-                title="Goldman Coffee Chat - John Smith"
-                preview="Discussed team culture and deal flow. They're looking for someone with strong modeling skills..."
-                date="Mar 5"
-                linkedTo="Coverage Book: John Smith"
-              />
-              <NoteItem 
-                title="Blackstone Superday Prep"
-                preview="Key technical questions to review: LBO modeling, Paper LBO walkthrough, Market outlook..."
-                date="Mar 3"
-                linkedTo="Interview Prep"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Folder Item
-function FolderItem({ name, active }: { name: string; active?: boolean }) {
-  return (
-    <button className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-      active ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-    }`}>
-      {name}
-    </button>
-  )
-}
-
-// Note Item
-function NoteItem({ title, preview, date, linkedTo }: {
-  title: string
-  preview: string
-  date: string
-  linkedTo: string
-}) {
-  return (
-    <div className="p-4 hover:bg-slate-800/30 cursor-pointer transition-colors">
-      <div className="flex justify-between items-start mb-1">
-        <h4 className="font-medium text-slate-200">{title}</h4>
-        <span className="text-xs text-slate-500">{date}</span>
-      </div>
-      <p className="text-sm text-slate-400 mb-2">{preview}</p>
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
-        Linked: {linkedTo}
-      </span>
-    </div>
-  )
-}
+export default RecruitTracker

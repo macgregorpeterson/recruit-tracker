@@ -18,7 +18,7 @@ import {
   TrendingUp,
   Target,
   Clock,
-  X
+  X,
   Brain
 } from 'lucide-react'
 

@@ -22,7 +22,11 @@ import {
   X,
   TrendingUp,
   Target,
-  Zap
+  Zap,
+  Trophy,
+  Link2,
+  StickyNote,
+  MessageSquare
 } from 'lucide-react'
 import { ApplicationStatus, STATUS_COLORS, STATUS_LABELS, STATUS_ORDER } from '../types'
 

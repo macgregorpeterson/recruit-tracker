@@ -16,7 +16,8 @@ import {
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
-  Award
+  Award,
+  Clock
 } from 'lucide-react'
 
 interface FirmResearchHubProps {

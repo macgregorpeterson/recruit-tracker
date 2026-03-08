@@ -428,33 +428,134 @@ function PipelineTab({ applications }: { applications: Application[] }) {
   )
 }
 
-// Calendar Tab
+// Calendar Tab - Manual Entry for Recruiting Events
 function CalendarTab() {
+  const [events, setEvents] = useState([
+    { id: '1', title: 'Coffee Chat with John Smith', firm: 'Goldman Sachs', type: 'coffee', date: '2026-03-10', time: '14:00', contact: 'John Smith', notes: 'Discuss team culture' },
+    { id: '2', title: 'Superday', firm: 'Blackstone', type: 'interview', date: '2026-03-11', time: '09:00', contact: 'Recruiting Team', notes: '4 rounds scheduled' },
+    { id: '3', title: 'Follow-up Call', firm: 'KKR', type: 'phone', date: '2026-03-13', time: '15:30', contact: 'Sarah Chen', notes: 'Process update' },
+  ])
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+
+  const getDaysInMonth = () => {
+    const year = selectedDate.getFullYear()
+    const month = selectedDate.getMonth()
+    const days = new Date(year, month + 1, 0).getDate()
+    const firstDay = new Date(year, month, 1).getDay()
+    return { days, firstDay, month, year }
+  }
+
+  const { days, firstDay, month, year } = getDaysInMonth()
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  
+  const eventsForDay = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return events.filter(e => e.date === dateStr)
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white">Calendar</h2>
-        <div className="flex gap-3">
-          <button className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors">
-            Connect Google Calendar
-          </button>
-          <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-500 hover:to-indigo-500 transition-all">
-            Add Event
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-500 hover:to-indigo-500 transition-all"
+        >
+          Add Event
+        </button>
       </div>
 
-      <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-12 text-center">
-        <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Calendar className="w-8 h-8 text-slate-600" />
+      <div className="grid grid-cols-12 gap-6">
+        {/* Calendar Grid */}
+        <div className="col-span-8">
+          <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-6">
+            {/* Month Navigation */}
+            <div className="flex justify-between items-center mb-6">
+              <button 
+                onClick={() => setSelectedDate(new Date(year, month - 1, 1))}
+                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                ←
+              </button>
+              <h3 className="text-xl font-semibold text-white">{monthNames[month]} {year}</h3>
+              <button 
+                onClick={() => setSelectedDate(new Date(year, month + 1, 1))}
+                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                →
+              </button>
+            </div>
+
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-medium text-slate-500 py-2">{day}</div>
+              ))}
+            </div>
+
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7 gap-2">
+              {Array.from({ length: firstDay }).map((_, i) => (
+                <div key={`empty-${i}`} className="h-24" />
+              ))}
+              {Array.from({ length: days }).map((_, day) => {
+                const dayNum = day + 1
+                const dayEvents = eventsForDay(dayNum)
+                const isToday = new Date().toDateString() === new Date(year, month, dayNum).toDateString()
+                
+                return (
+                  <div 
+                    key={dayNum}
+                    className={`h-24 border border-slate-800 rounded-lg p-2 ${isToday ? 'bg-blue-500/10 border-blue-500/30' : 'hover:bg-slate-800/30'} transition-colors cursor-pointer`}
+                  >
+                    <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-400' : 'text-slate-400'}`}>{dayNum}</div>
+                    <div className="space-y-1">
+                      {dayEvents.slice(0, 2).map(event => (
+                        <div key={event.id} className={`text-xs px-2 py-1 rounded truncate ${
+                          event.type === 'coffee' ? 'bg-amber-500/20 text-amber-400' :
+                          event.type === 'interview' ? 'bg-purple-500/20 text-purple-400' :
+                          'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {event.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <div className="text-xs text-slate-500">+{dayEvents.length - 2} more</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
-        <h3 className="text-lg font-medium text-white mb-2">Connect Your Calendar</h3>
-        <p className="text-slate-400 mb-6 max-w-md mx-auto">
-          Sync recruiting events from Google Calendar to track coffee chats, interviews, and follow-ups
-        </p>
-        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-500 hover:to-indigo-500 transition-all">
-          Connect Google Calendar
-        </button>
+
+        {/* Upcoming Events List */}
+        <div className="col-span-4">
+          <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
+            <h3 className="font-semibold text-white mb-4">Upcoming Events</h3>
+            <div className="space-y-3">
+              {events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(event => (
+                <div key={event.id} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${
+                      event.type === 'coffee' ? 'bg-amber-500' :
+                      event.type === 'interview' ? 'bg-purple-500' :
+                      'bg-blue-500'
+                    }`} />
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-200 text-sm">{event.title}</div>
+                      <div className="text-xs text-slate-400">{event.firm} • {event.time}</div>
+                      <div className="text-xs text-slate-500 mt-1">{new Date(event.date).toLocaleDateString()}</div>
+                      {event.notes && <div className="text-xs text-slate-500 mt-1 italic">{event.notes}</div>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

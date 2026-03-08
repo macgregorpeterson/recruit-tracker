@@ -1,6 +1,23 @@
-export const metadata = {
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+export const metadata: Metadata = {
   title: 'RecruitTracker - Banking Recruiting CRM',
-  description: 'Coverage book, pipeline, calendar, and notes for banking recruiting',
+  description: 'Your complete banking recruiting command center. Coverage book, pipeline, calendar, notes, interview prep, and analytics all in one place.',
+  keywords: ['recruiting', 'investment banking', 'CRM', 'job search', 'interviews'],
+  authors: [{ name: 'RecruitTracker' }],
+  openGraph: {
+    title: 'RecruitTracker - Banking Recruiting CRM',
+    description: 'Your complete banking recruiting command center',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
@@ -9,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} dark`}>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }

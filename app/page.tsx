@@ -37,7 +37,10 @@ import {
   BookOpen,
   Lightbulb,
   Database,
-  Keyboard
+  Keyboard,
+  GitCommit,
+  Scale,
+  FolderOpen
 } from 'lucide-react'
 import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
 
@@ -55,6 +58,10 @@ import { InterviewPrepTracker } from './components/InterviewPrepTracker'
 import { EmailTemplateManager } from './components/EmailTemplateManager'
 import { DataImportExport } from './components/DataImportExport'
 import { KeyboardShortcutsProvider } from './components/KeyboardShortcuts'
+import { NetworkingTimeline } from './components/NetworkingTimeline'
+import { OfferComparisonTool } from './components/OfferComparisonTool'
+import { DocumentVault } from './components/DocumentVault'
+import { EnhancedAnalytics } from './components/EnhancedAnalytics'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -105,7 +112,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders' | 'templates' | 'data' | 'timeline' | 'offers' | 'documents'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -474,6 +481,29 @@ export default function RecruitTracker() {
               icon={Database}
               label="Data & Backup"
             />
+            
+            <div className="pt-4 mt-4 border-t border-slate-800">
+              <p className="px-3 text-xs font-medium text-slate-600 uppercase tracking-wider mb-2">Advanced</p>
+              <NavButton 
+                active={activeTab === 'timeline'} 
+                onClick={() => setActiveTab('timeline')}
+                icon={GitCommit}
+                label="Timeline"
+              />
+              <NavButton 
+                active={activeTab === 'offers'} 
+                onClick={() => setActiveTab('offers')}
+                icon={Scale}
+                label="Offer Compare"
+                count={applications.filter(a => a.status === 'offer').length}
+              />
+              <NavButton 
+                active={activeTab === 'documents'} 
+                onClick={() => setActiveTab('documents')}
+                icon={FolderOpen}
+                label="Documents"
+              />
+            </div>
           </nav>
 
           <div className="mt-8 px-4">
@@ -577,7 +607,11 @@ export default function RecruitTracker() {
                   />
                 )}
                 {activeTab === 'analytics' && (
-                  <AnalyticsTab stats={dashboardStats} applications={applications} events={events} />
+                  <EnhancedAnalytics 
+                    applications={applications} 
+                    contacts={contacts}
+                    events={events} 
+                  />
                 )}
                 {activeTab === 'research' && (
                   <FirmResearchHub
@@ -620,6 +654,29 @@ export default function RecruitTracker() {
                       fetchData()
                     }}
                   />
+                )}
+                {activeTab === 'timeline' && (
+                  <NetworkingTimeline 
+                    contacts={contacts}
+                    applications={applications}
+                    events={events}
+                    notes={notes}
+                    onActivityClick={(type, id) => {
+                      console.log('Activity clicked:', type, id)
+                    }}
+                  />
+                )}
+                {activeTab === 'offers' && (
+                  <OfferComparisonTool 
+                    offers={applications}
+                    contacts={contacts}
+                    onUpdateOffer={(offer) => {
+                      console.log('Offer updated:', offer)
+                    }}
+                  />
+                )}
+                {activeTab === 'documents' && (
+                  <DocumentVault />
                 )}
               </motion.div>
             </AnimatePresence>

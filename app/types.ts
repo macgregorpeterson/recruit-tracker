@@ -11,6 +11,7 @@ export interface Contact {
   linkedin_url?: string
   tags: string[]
   notes_count?: number
+  last_contacted?: string
   created_at?: string
   updated_at?: string
 }
@@ -74,6 +75,7 @@ export interface Note {
   contact_id?: string | null
   event_id?: string | null
   application_id?: string | null
+  firm?: string | null
   is_folder?: boolean
   created_at?: string
   updated_at?: string

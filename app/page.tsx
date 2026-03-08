@@ -32,9 +32,23 @@ import {
   MoreHorizontal,
   Filter,
   Download,
-  RefreshCw
+  RefreshCw,
+  Bell,
+  BookOpen,
+  Lightbulb
 } from 'lucide-react'
 import { Contact, Application, CalendarEvent, Note, ApplicationStatus, EventType, DashboardStats, RecentActivity } from './types'
+
+// Import tab components
+import { DashboardTab } from './components/DashboardTab'
+import { CoverageBookTab } from './components/CoverageBookTab'
+import { PipelineTab } from './components/PipelineTab'
+import { CalendarTab } from './components/CalendarTab'
+import { NotesTab } from './components/NotesTab'
+import { AnalyticsTab } from './components/AnalyticsTab'
+import { SmartTodayWidget } from './components/SmartTodayWidget'
+import { FirmResearchHub } from './components/FirmResearchHub'
+import { DeadlineReminders } from './components/DeadlineReminders'
 
 // Initialize Supabase
 const supabase = createClient(
@@ -85,7 +99,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 }
 
 export default function RecruitTracker() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coverage' | 'pipeline' | 'calendar' | 'notes' | 'analytics' | 'prep' | 'research' | 'reminders'>('dashboard')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -366,6 +380,19 @@ export default function RecruitTracker() {
               label="Analytics"
             />
             <NavButton 
+              active={activeTab === 'research'} 
+              onClick={() => setActiveTab('research')}
+              icon={BookOpen}
+              label="Firm Research"
+            />
+            <NavButton 
+              active={activeTab === 'reminders'} 
+              onClick={() => setActiveTab('reminders')}
+              icon={Bell}
+              label="Reminders"
+              count={applications.filter(a => a.deadline_date && !a.applied_date).length}
+            />
+            <NavButton 
               active={activeTab === 'prep'} 
               onClick={() => setActiveTab('prep')}
               icon={Brain}
@@ -415,18 +442,27 @@ export default function RecruitTracker() {
                 transition={{ duration: 0.2 }}
               >
                 {activeTab === 'dashboard' && (
-                  <DashboardTab 
-                    stats={dashboardStats}
-                    recentActivity={recentActivity}
-                    contacts={contacts}
-                    applications={applications}
-                    events={events}
-                    onNavigate={setActiveTab}
-                    onAddContact={() => setShowContactModal(true)}
-                    onAddApplication={() => setShowApplicationModal(true)}
-                    onAddEvent={() => setShowEventModal(true)}
-                    onAddNote={() => setShowNoteModal(true)}
-                  />
+                  <div className="space-y-6">
+                    <SmartTodayWidget
+                      events={events}
+                      applications={applications}
+                      contacts={contacts}
+                      onNavigate={setActiveTab}
+                      onAddEvent={() => setShowEventModal(true)}
+                    />
+                    <DashboardTab 
+                      stats={dashboardStats}
+                      recentActivity={recentActivity}
+                      contacts={contacts}
+                      applications={applications}
+                      events={events}
+                      onNavigate={setActiveTab}
+                      onAddContact={() => setShowContactModal(true)}
+                      onAddApplication={() => setShowApplicationModal(true)}
+                      onAddEvent={() => setShowEventModal(true)}
+                      onAddNote={() => setShowNoteModal(true)}
+                    />
+                  </div>
                 )}
                 {activeTab === 'coverage' && (
                   <CoverageBookTab 
@@ -467,8 +503,30 @@ export default function RecruitTracker() {
                 {activeTab === 'analytics' && (
                   <AnalyticsTab stats={dashboardStats} applications={applications} events={events} />
                 )}
+                {activeTab === 'research' && (
+                  <FirmResearchHub
+                    applications={applications}
+                    contacts={contacts}
+                    notes={notes}
+                    onNavigate={setActiveTab}
+                  />
+                )}
+                {activeTab === 'reminders' && (
+                  <DeadlineReminders
+                    applications={applications}
+                    events={events}
+                    onUpdateApplication={async (id, updates) => {
+                      await supabase.from('applications').update(updates).eq('id', id)
+                      fetchData()
+                    }}
+                  />
+                )}
                 {activeTab === 'prep' && (
-                  <InterviewPrepTab applications={applications} />
+                  <div className="glass-card p-8 text-center">
+                    <Brain className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">Interview Prep</h3>
+                    <p className="text-slate-400">Coming soon - Track your interview preparation progress</p>
+                  </div>
                 )}
               </motion.div>
             </AnimatePresence>
@@ -477,89 +535,21 @@ export default function RecruitTracker() {
       </div>
 
       {/* Command Palette */}
-      <CommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-        contacts={contacts}
-        applications={applications}
-        events={events}
-        notes={notes}
-        onNavigate={(tab) => { setActiveTab(tab as any); setShowCommandPalette(false) }}
-        onAddContact={() => { setShowContactModal(true); setShowCommandPalette(false) }}
-        onAddApplication={() => { setShowApplicationModal(true); setShowCommandPalette(false) }}
-        onAddEvent={() => { setShowEventModal(true); setShowCommandPalette(false) }}
-        onAddNote={() => { setShowNoteModal(true); setShowCommandPalette(false) }}
-      />
-
-      {/* Modals */}
-      <AnimatePresence>
-        {showContactModal && (
-          <ContactModal
-            onClose={() => setShowContactModal(false)}
-            onSave={async (contact) => {
-              await supabase.from('contacts').insert([{ ...contact, user_id: user.id }])
-              fetchData()
-              setShowContactModal(false)
-            }}
-          />
-        )}
-        {showApplicationModal && (
-          <ApplicationModal
-            onClose={() => setShowApplicationModal(false)}
-            onSave={async (app) => {
-              await supabase.from('applications').insert([{ ...app, user_id: user.id }])
-              fetchData()
-              setShowApplicationModal(false)
-            }}
-          />
-        )}
-        {showEventModal && (
-          <EventModal
-            onClose={() => setShowEventModal(false)}
-            onSave={async (event) => {
-              await supabase.from('events').insert([{ ...event, user_id: user.id }])
-              fetchData()
-              setShowEventModal(false)
-            }}
-            contacts={contacts}
-            applications={applications}
-          />
-        )}
-        {showNoteModal && (
-          <NoteModal
-            onClose={() => setShowNoteModal(false)}
-            onSave={async (note) => {
-              await supabase.from('notes').insert([{ ...note, user_id: user.id }])
-              fetchData()
-              setShowNoteModal(false)
-            }}
-            contacts={contacts}
-            applications={applications}
-            events={events}
-          />
-        )}
-        {selectedContact && (
-          <ContactDetailModal
-            contact={selectedContact}
-            onClose={() => setSelectedContact(null)}
-            applications={applications.filter(a => a.firm === selectedContact.firm)}
-            notes={notes.filter(n => n.contact_id === selectedContact.id)}
-            events={events.filter(e => e.contact_ids?.includes(selectedContact.id))}
-          />
-        )}
-        {selectedApplication && (
-          <ApplicationDetailModal
-            application={selectedApplication}
-            onClose={() => setSelectedApplication(null)}
-            notes={notes.filter(n => n.application_id === selectedApplication.id)}
-            events={events.filter(e => e.firm === selectedApplication.firm)}
-            onStatusChange={async (status) => {
-              await supabase.from('applications').update({ status }).eq('id', selectedApplication.id)
-              fetchData()
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {showCommandPalette && (
+        <CommandPalette
+          isOpen={showCommandPalette}
+          onClose={() => setShowCommandPalette(false)}
+          contacts={contacts}
+          applications={applications}
+          events={events}
+          notes={notes}
+          onNavigate={(tab) => { setActiveTab(tab as any); setShowCommandPalette(false) }}
+          onAddContact={() => { setShowContactModal(true); setShowCommandPalette(false) }}
+          onAddApplication={() => { setShowApplicationModal(true); setShowCommandPalette(false) }}
+          onAddEvent={() => { setShowEventModal(true); setShowCommandPalette(false) }}
+          onAddNote={() => { setShowNoteModal(true); setShowCommandPalette(false) }}
+        />
+      )}
     </div>
   )
 }
@@ -604,4 +594,97 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-export default RecruitTracker
+// Command Palette Component
+function CommandPalette({ 
+  isOpen, 
+  onClose, 
+  contacts, 
+  applications, 
+  events, 
+  notes,
+  onNavigate,
+  onAddContact,
+  onAddApplication,
+  onAddEvent,
+  onAddNote
+}: {
+  isOpen: boolean
+  onClose: () => void
+  contacts: Contact[]
+  applications: Application[]
+  events: CalendarEvent[]
+  notes: Note[]
+  onNavigate: (tab: string) => void
+  onAddContact: () => void
+  onAddApplication: () => void
+  onAddEvent: () => void
+  onAddNote: () => void
+}) {
+  const [query, setQuery] = useState('')
+
+  const results = [
+    { type: 'action', label: 'Add Contact', icon: Users, action: onAddContact },
+    { type: 'action', label: 'Add Application', icon: Briefcase, action: onAddApplication },
+    { type: 'action', label: 'Add Event', icon: Calendar, action: onAddEvent },
+    { type: 'action', label: 'Add Note', icon: FileText, action: onAddNote },
+    { type: 'nav', label: 'Go to Dashboard', icon: LayoutDashboard, action: () => onNavigate('dashboard') },
+    { type: 'nav', label: 'Go to Coverage Book', icon: Users, action: () => onNavigate('coverage') },
+    { type: 'nav', label: 'Go to Pipeline', icon: Briefcase, action: () => onNavigate('pipeline') },
+    { type: 'nav', label: 'Go to Calendar', icon: Calendar, action: () => onNavigate('calendar') },
+    { type: 'nav', label: 'Go to Notes', icon: FileText, action: () => onNavigate('notes') },
+    { type: 'nav', label: 'Go to Analytics', icon: BarChart3, action: () => onNavigate('analytics') },
+    ...contacts.slice(0, 5).map(c => ({ type: 'contact', label: c.name, sublabel: c.firm, action: () => onNavigate('coverage') })),
+    ...applications.slice(0, 5).map(a => ({ type: 'application', label: a.firm, sublabel: a.role, action: () => onNavigate('pipeline') })),
+  ].filter(item => 
+    item.label.toLowerCase().includes(query.toLowerCase()) ||
+    ('sublabel' in item && item.sublabel?.toLowerCase().includes(query.toLowerCase()))
+  )
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative w-full max-w-2xl bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden"
+      >
+        <div className="p-4 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <Search className="w-5 h-5 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search commands, contacts, applications..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none text-lg"
+              autoFocus
+            />
+            <button onClick={onClose} className="p-1 text-slate-500 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        <div className="max-h-[60vh] overflow-y-auto p-2">
+          {results.map((result, i) => (
+            <button
+              key={i}
+              onClick={() => { result.action(); onClose() }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-xl transition-colors text-left"
+            >
+              {'icon' in result && result.icon && <result.icon className="w-5 h-5 text-slate-400" />}
+              <div className="flex-1">
+                <div className="text-white">{result.label}</div>
+                {'sublabel' in result && result.sublabel && (
+                  <div className="text-sm text-slate-500">{result.sublabel}</div>
+                )}
+              </div>
+              <span className="text-xs text-slate-600 uppercase">{result.type}</span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  )
+}

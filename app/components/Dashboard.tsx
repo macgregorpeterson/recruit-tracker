@@ -181,7 +181,7 @@ export function Dashboard({ stats, recentActivity, contacts, applications, event
                     >
                       <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center shrink-0 ${
                         event.event_type === 'coffee' ? 'bg-amber-500/10' :
-                        event.event_type === 'interview' ? 'bg-purple-500/10' :
+                        event.event_type === 'superday' ? 'bg-purple-500/10' :
                         'bg-blue-500/10'
                       }`}>
                         <span className="text-xs font-bold text-slate-300">

@@ -158,7 +158,7 @@ export function ContactDetailModal({
                   key={event.id} 
                   className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/30"
                 >
-                  <div className={`w-2 h-2 rounded-full ${EVENT_TYPE_COLORS[event.event_type].bg.replace('/20', '')}`} />
+                  <div className={`w-2 h-2 rounded-full ${EVENT_TYPE_COLORS[event.event_type].bg}`} />
                   <div className="flex-1">
                     <p className="text-sm text-slate-200">{event.title}</p>
                     <p className="text-xs text-slate-500">

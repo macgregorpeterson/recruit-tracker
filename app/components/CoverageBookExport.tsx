@@ -89,7 +89,7 @@ export function CoverageBookExport({
 
     if (selectedSections.includes('contacts')) {
       md += `## Contacts (${contacts.length})\n\n`
-      const firms = [...new Set(contacts.map(c => c.firm))].sort()
+      const firms = Array.from(new Set(contacts.map(c => c.firm))).sort()
       
       firms.forEach(firm => {
         const firmContacts = contacts.filter(c => c.firm === firm)

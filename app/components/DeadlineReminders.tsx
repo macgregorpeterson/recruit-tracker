@@ -122,14 +122,26 @@ export function DeadlineReminders({ applications, events, onUpdateApplication }:
   }, [reminders, filter, sortBy])
 
   const handleComplete = (reminderId: string) => {
-    setCompletedReminders(prev => new Set([...prev, reminderId]))
+    setCompletedReminders(prev => {
+      const newSet = new Set(prev)
+      newSet.add(reminderId)
+      return newSet
+    })
     setTimeout(() => {
-      setDismissedReminders(prev => new Set([...prev, reminderId]))
+      setDismissedReminders(prev => {
+        const newSet = new Set(prev)
+        newSet.add(reminderId)
+        return newSet
+      })
     }, 1000)
   }
 
   const handleDismiss = (reminderId: string) => {
-    setDismissedReminders(prev => new Set([...prev, reminderId]))
+    setDismissedReminders(prev => {
+      const newSet = new Set(prev)
+      newSet.add(reminderId)
+      return newSet
+    })
   }
 
   const getTypeIcon = (type: ReminderType) => {
